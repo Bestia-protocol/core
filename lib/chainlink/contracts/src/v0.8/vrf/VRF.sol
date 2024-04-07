@@ -6,75 +6,75 @@ pragma solidity ^0.8.0;
  * @notice Verification of verifiable-random-function (VRF) proofs, following
  * @notice https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.3
  * @notice See https://eprint.iacr.org/2017/099.pdf for security proofs.
- * 
+ *
  * @dev Bibliographic references:
- * 
+ *
  * @dev Goldberg, et al., "Verifiable Random Functions (VRFs)", Internet Draft
  * @dev draft-irtf-cfrg-vrf-05, IETF, Aug 11 2019,
  * @dev https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05
- * 
+ *
  * @dev Papadopoulos, et al., "Making NSEC5 Practical for DNSSEC", Cryptology
  * @dev ePrint Archive, Report 2017/099, https://eprint.iacr.org/2017/099.pdf
  * ****************************************************************************
  * @dev USAGE
- * 
+ *
  * @dev The main entry point is _randomValueFromVRFProof. See its docstring.
  * ****************************************************************************
  * @dev PURPOSE
- * 
+ *
  * @dev Reggie the Random Oracle (not his real job) wants to provide randomness
  * @dev to Vera the verifier in such a way that Vera can be sure he's not
  * @dev making his output up to suit himself. Reggie provides Vera a public key
  * @dev to which he knows the secret key. Each time Vera provides a seed to
  * @dev Reggie, he gives back a value which is computed completely
  * @dev deterministically from the seed and the secret key.
- * 
+ *
  * @dev Reggie provides a proof by which Vera can verify that the output was
  * @dev correctly computed once Reggie tells it to her, but without that proof,
  * @dev the output is computationally indistinguishable to her from a uniform
  * @dev random sample from the output space.
- * 
+ *
  * @dev The purpose of this contract is to perform that verification.
  * ****************************************************************************
  * @dev DESIGN NOTES
- * 
+ *
  * @dev The VRF algorithm verified here satisfies the full uniqueness, full
  * @dev collision resistance, and full pseudo-randomness security properties.
  * @dev See "SECURITY PROPERTIES" below, and
  * @dev https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-3
- * 
+ *
  * @dev An elliptic curve point is generally represented in the solidity code
  * @dev as a uint256[2], corresponding to its affine coordinates in
  * @dev GF(FIELD_SIZE).
- * 
+ *
  * @dev For the sake of efficiency, this implementation deviates from the spec
  * @dev in some minor ways:
- * 
+ *
  * @dev - Keccak hash rather than the SHA256 hash recommended in
  * @dev   https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.5
  * @dev   Keccak costs much less gas on the EVM, and provides similar security.
- * 
+ *
  * @dev - Secp256k1 curve instead of the P-256 or ED25519 curves recommended in
  * @dev   https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.5
  * @dev   For curve-point multiplication, it's much cheaper to abuse ECRECOVER
- * 
+ *
  * @dev - _hashToCurve recursively hashes until it finds a curve x-ordinate. On
  * @dev   the EVM, this is slightly more efficient than the recommendation in
  * @dev   https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.4.1.1
  * @dev   step 5, to concatenate with a nonce then hash, and rehash with the
  * @dev   nonce updated until a valid x-ordinate is found.
- * 
+ *
  * @dev - _hashToCurve does not include a cipher version string or the byte 0x1
  * @dev   in the hash message, as recommended in step 5.B of the draft
  * @dev   standard. They are unnecessary here because no variation in the
  * @dev   cipher suite is allowed.
- * 
+ *
  * @dev - Similarly, the hash input in _scalarFromCurvePoints does not include a
  * @dev   commitment to the cipher suite, either, which differs from step 2 of
  * @dev   https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.4.3
  * @dev   . Also, the hash input is the concatenation of the uncompressed
  * @dev   points, not the compressed points as recommended in step 3.
- * 
+ *
  * @dev - In the calculation of the challenge value "c", the "u" value (i.e.
  * @dev   the value computed by Reggie as the nonce times the secp256k1
  * @dev   generator point, see steps 5 and 7 of
@@ -84,23 +84,23 @@ pragma solidity ^0.8.0;
  * @dev   calculation of u up to its address, by abusing ECRECOVER.
  * ****************************************************************************
  * @dev   SECURITY PROPERTIES
- * 
+ *
  * @dev Here are the security properties for this VRF:
- * 
+ *
  * @dev Full uniqueness: For any seed and valid VRF public key, there is
  * @dev   exactly one VRF output which can be proved to come from that seed, in
  * @dev   the sense that the proof will pass _verifyVRFProof.
- * 
+ *
  * @dev Full collision resistance: It's cryptographically infeasible to find
  * @dev   two seeds with same VRF output from a fixed, valid VRF key
- * 
+ *
  * @dev Full pseudorandomness: Absent the proofs that the VRF outputs are
  * @dev   derived from a given seed, the outputs are computationally
  * @dev   indistinguishable from randomness.
- * 
+ *
  * @dev https://eprint.iacr.org/2017/099.pdf, Appendix B contains the proofs
  * @dev for these properties.
- * 
+ *
  * @dev For secp256k1, the key validation described in section
  * @dev https://datatracker.ietf.org/doc/html/draft-irtf-cfrg-vrf-05#section-5.6
  * @dev is unnecessary, because secp256k1 has cofactor 1, and the
@@ -120,14 +120,14 @@ pragma solidity ^0.8.0;
  * @dev which _hashToCurve would cost more than 2,017,000 gas, one would have to
  * @dev try, in expectation, about 2¹²⁸ seeds, which is infeasible for any
  * @dev foreseeable computational resources. (25,000 + 128 * 15,555 < 2,017,000.)
- * 
+ *
  * @dev Since the gas block limit for the Ethereum main net is 10,000,000 gas,
  * @dev this means it is infeasible for an adversary to prevent correct
  * @dev operation of this contract by choosing an adverse seed.
- * 
+ *
  * @dev (See TestMeasureHashToCurveGasCost for verification of the gas cost for
  * @dev _hashToCurve.)
- * 
+ *
  * @dev It may be possible to make a secure constant-time _hashToCurve function.
  * @dev See notes in _hashToCurve docstring.
  */
@@ -310,18 +310,18 @@ contract VRF {
     /**
      *
      *     @notice Computes elliptic-curve sum, in projective co-ordinates
-     * 
+     *
      *     @dev Using projective coordinates avoids costly divisions
-     * 
+     *
      *     @dev To use this with p and q in affine coordinates, call
      *     @dev _projectiveECAdd(px, py, qx, qy). This will return
      *     @dev the addition of (px, py, 1) and (qx, qy, 1), in the
      *     @dev secp256k1 group.
-     * 
+     *
      *     @dev This can be used to calculate the z which is the inverse to zInv
      *     @dev in isValidVRFOutput. But consider using a faster
      *     @dev re-implementation such as ProjectiveECAdd in the golang vrf package.
-     * 
+     *
      *     @dev This function assumes [px,py,1],[qx,qy,1] are valid projective
      *          coordinates of secp256k1 points. That is safe in this contract,
      *          because this method is only used by _linearCombination, which checks
@@ -331,7 +331,7 @@ contract VRF {
      *     @param py The second affine coordinate of the first summand
      *     @param qx The first affine coordinate of the second summand
      *     @param qy The second affine coordinate of the second summand
-     * 
+     *
      *     (px,py) and (qx,qy) must be distinct, valid secp256k1 points.
      *
      *     Return values are projective coordinates of [px,py,1]+[qx,qy,1] as points

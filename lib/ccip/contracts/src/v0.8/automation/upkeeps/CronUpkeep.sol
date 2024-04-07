@@ -8,7 +8,7 @@
  *     1) 0xAB..CD, update(1), "0 0 * * *"     --> runs update(1) on 0xAB..CD daily at midnight
  *     2) 0xAB..CD, update(2), "30 12 * * 0-4" --> runs update(2) on 0xAB..CD weekdays at 12:30
  *     3) 0x12..34, trigger(), "0 * * * *"     --> runs trigger() on 0x12..34 hourly
- * 
+ *
  *   To use this contract, a user first deploys this contract and registers it on the chainlink
  *   keeper registry. Then the user adds cron jobs by following these steps:
  *     1) Convert a cron string to an encoded cron spec by calling encodeCronString()
