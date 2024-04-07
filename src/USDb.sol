@@ -38,7 +38,7 @@ contract USDb is Ownable2Step, ERC20Burnable, ERC20Permit {
         _mint(to, amount);
     }
 
-    function burn(uint256 amount) public override onlyMinter {
-        _burn(msg.sender, amount);
+    function burn(address from, uint256 amount) external onlyMinter {
+        _burn(from, amount);
     }
 }

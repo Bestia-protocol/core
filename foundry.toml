@@ -9,9 +9,7 @@ gas_reports = ["*"]
 remappings = [
     'forge-std/=lib/forge-std/src/',
     '@prb/test/=lib/prb-test/src/',
-    '@openzeppelin/=lib/openzeppelin-contracts/',
-    '@chainlink/contracts/=lib/chainlink/contracts/',
-    '@chainlink-ccip/=lib/ccip/contracts/'
+    '@openzeppelin/=lib/openzeppelin-contracts/'
 ]
 solc = '0.8.19'
 
