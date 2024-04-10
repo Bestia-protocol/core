@@ -5,6 +5,8 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IsUSDe} from "./interfaces/IsUSDe.sol";
 import {IRouter} from "./interfaces/IRouter.sol";
 
+// This is the contract you deposit sUSDe into to mint USDb
+
 contract USDeVault {
     using SafeERC20 for IsUSDe;
     using SafeERC20 for IERC20;
@@ -25,14 +27,14 @@ contract USDeVault {
     error RestrictedToRouter();
     error InsufficientAmount();
 
-    constructor(address _router, address _susde, address _usdb, address _susdb) {
+    constructor(address _router, address _usde, address _susde,  address _usdb, address _susdb) {
         assert(_router != address(0));
         assert(_susde != address(0));
         assert(_usdb != address(0));
         assert(_susdb != address(0));
         router = IRouter(_router);
         susde = IsUSDe(_susde);
-        usde = IERC20(susde.asset());
+        usde = IERC20(_usde);
         usdb = _usdb;
         susdb = _susdb;
     }
