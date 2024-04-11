@@ -20,7 +20,6 @@ contract USDeVault {
     uint256 public usdbSupply;
 
     event Stake(address indexed user, uint256 amount);
-    event StakeNative(address indexed user, uint256 amount);
     event Unstake(address indexed user, uint256 amount);
     event Rebalanced();
 
@@ -63,19 +62,6 @@ contract USDeVault {
         emit Stake(msg.sender, amountToMint);
     }
 
-    function stakeNative(uint56 amount) external {
-        usde.safeTransferFrom(msg.sender, address(this), amount);
-
-        bytes memory data = abi.encodeWithSignature(
-            "mint(address,uint256)",
-            msg.sender,
-            amount
-        );
-        router.call(usdb, data);
-        usdbSupply += amount;
-
-        emit StakeNative(msg.sender, amount);
-    }
 
     function unstake(address to, uint256 amount) external {
         if (msg.sender != address(router)) revert RestrictedToRouter();
