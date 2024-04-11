@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {NonblockingLzApp} from "@layerzerolabs/contracts/lzApp/NonblockingLzApp.sol";
 import {IsUSDe} from "./interfaces/IsUSDe.sol";
-import {IRouter} from "./interfaces/IRouter.sol";
+import {Data} from "./Data.sol";
 
-contract USDeVault {
+contract USDeVault is NonblockingLzApp {
     using SafeERC20 for IsUSDe;
     using SafeERC20 for IERC20;
 
@@ -13,7 +14,7 @@ contract USDeVault {
     IERC20 public immutable usde;
     address public immutable usdb;
     address public immutable susdb;
-    IRouter public immutable router;
+    uint16 public immutable destChainId;
 
     uint256 public usdbSupply;
 
@@ -25,50 +26,57 @@ contract USDeVault {
     error RestrictedToRouter();
     error InsufficientAmount();
 
-    constructor(address _router, address _susde, address _usdb, address _susdb) {
-        assert(_router != address(0));
+    constructor(address _lzEndpoint, uint16 _destChainId, address _susde, address _usdb, address _susdb)
+        NonblockingLzApp(_lzEndpoint)
+    {
         assert(_susde != address(0));
         assert(_usdb != address(0));
         assert(_susdb != address(0));
-        router = IRouter(_router);
+        destChainId = _destChainId;
         susde = IsUSDe(_susde);
         usde = IERC20(susde.asset());
         usdb = _usdb;
         susdb = _susdb;
+
+        usde.safeApprove(address(susde), type(uint256).max);
     }
 
-    receive() external payable {}
-
     // sUSDe
-    function stake(uint256 amount) external {
+    function stake(uint256 amount) external payable {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
         uint256 amountToMint = susde.convertToAssets(amount);
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amountToMint);
-        router.call(usdb, data);
+        Data.Msg memory message = Data.Msg({user: msg.sender, amount: amountToMint, action: Data.Action.MINT});
+        bytes memory payload = abi.encode(message);
+        _lzSend(destChainId, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
         usdbSupply += amountToMint;
 
         emit Stake(msg.sender, amountToMint);
     }
 
-    function stakeNative(uint56 amount) external {
+    // USDe
+    function stakeNative(uint56 amount) external payable {
         usde.safeTransferFrom(msg.sender, address(this), amount);
+        susde.deposit(amount, address(this));
 
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amount);
-        router.call(usdb, data);
+        Data.Msg memory message = Data.Msg({user: msg.sender, amount: amount, action: Data.Action.MINT});
+        bytes memory payload = abi.encode(message);
+        _lzSend(destChainId, payload, payable(msg.sender), address(0x0), bytes(""), msg.value);
         usdbSupply += amount;
 
         emit StakeNative(msg.sender, amount);
     }
 
-    function unstake(address to, uint256 amount) external {
-        if (msg.sender != address(router)) revert RestrictedToRouter();
+    function _nonblockingLzReceive(uint16, bytes memory, uint64, bytes memory _payload) internal override {
+        (Data.Msg memory payload) = abi.decode(_payload, (Data.Msg));
 
-        uint256 toRedeem = susde.convertToShares(amount);
-        susde.safeTransfer(to, toRedeem);
-        usdbSupply -= amount;
+        assert(payload.action == Data.Action.BURN); // only support redeeming for now
 
-        emit Unstake(msg.sender, toRedeem);
+        uint256 toRedeem = susde.convertToShares(payload.amount);
+        susde.safeTransfer(payload.user, toRedeem);
+        usdbSupply -= payload.amount;
+
+        emit Unstake(payload.user, toRedeem);
     }
 
     function harvest() external returns (uint256) {
@@ -76,8 +84,8 @@ contract USDeVault {
         uint256 toMint;
 
         // send cross-chain call to mint usdb tokenx
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, toMint);
-        router.call(usdb, data);
+        //bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, toMint);
+        //router.call(usdb, data);
 
         emit Rebalanced();
 

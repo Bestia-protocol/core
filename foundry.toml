@@ -9,9 +9,10 @@ gas_reports = ["*"]
 remappings = [
     'forge-std/=lib/forge-std/src/',
     '@prb/test/=lib/prb-test/src/',
-    '@openzeppelin/=lib/openzeppelin-contracts/'
+    '@openzeppelin/=lib/openzeppelin-contracts/',
+    '@layerzerolabs/=lib/solidity-examples/'
 ]
-solc = '0.8.19'
+solc = '0.8.20'
 
 [rpc_endpoints]
 ethereumSepolia = "${ETHEREUM_SEPOLIA_RPC_URL}"
