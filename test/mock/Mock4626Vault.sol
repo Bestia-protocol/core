@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {MockUSDe} from "./MockUSDe.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IsUSDe} from "src/interfaces/IsUSDe.sol";
+import {Isusde} from "src/interfaces/Isusde.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // Mock ERC4626 Vault for testing
@@ -22,7 +22,8 @@ contract Mock4626Vault is ERC4626 {
 
     constructor(
         MockUSDe _usde
-    ) ERC20("Staked USDe", "sUSDe") ERC4626(IERC20(_usde)) {
+    ) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {
         usde = _usde;
     }
+
 }

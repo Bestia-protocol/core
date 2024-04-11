@@ -2,16 +2,16 @@
 pragma solidity 0.8.19;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IsUSDe} from "./interfaces/IsUSDe.sol";
+import {Isusde} from "./interfaces/Isusde.sol";
 import {IRouter} from "./interfaces/IRouter.sol";
 
-// This is the contract you deposit sUSDe into to mint USDb
+// This is the contract you deposit susde into to mint USDb
 
 contract USDeVault {
-    using SafeERC20 for IsUSDe;
+    using SafeERC20 for Isusde;
     using SafeERC20 for IERC20;
 
-    IsUSDe public immutable susde;
+    Isusde public immutable susde;
     IERC20 public immutable usde;
     address public immutable usdb;
     address public immutable susdb;
@@ -27,13 +27,19 @@ contract USDeVault {
     error RestrictedToRouter();
     error InsufficientAmount();
 
-    constructor(address _router, address _usde, address _susde,  address _usdb, address _susdb) {
+    constructor(
+        address _router,
+        address _usde,
+        address _susde,
+        address _usdb,
+        address _susdb
+    ) {
         assert(_router != address(0));
         assert(_susde != address(0));
         assert(_usdb != address(0));
         assert(_susdb != address(0));
         router = IRouter(_router);
-        susde = IsUSDe(_susde);
+        susde = Isusde(_susde);
         usde = IERC20(_usde);
         usdb = _usdb;
         susdb = _susdb;
@@ -41,12 +47,16 @@ contract USDeVault {
 
     receive() external payable {}
 
-    // sUSDe
+    // susde
     function stake(uint256 amount) external {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
         uint256 amountToMint = susde.convertToAssets(amount);
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amountToMint);
+        bytes memory data = abi.encodeWithSignature(
+            "mint(address,uint256)",
+            msg.sender,
+            amountToMint
+        );
         router.call(usdb, data);
         usdbSupply += amountToMint;
 
@@ -56,7 +66,11 @@ contract USDeVault {
     function stakeNative(uint56 amount) external {
         usde.safeTransferFrom(msg.sender, address(this), amount);
 
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amount);
+        bytes memory data = abi.encodeWithSignature(
+            "mint(address,uint256)",
+            msg.sender,
+            amount
+        );
         router.call(usdb, data);
         usdbSupply += amount;
 
@@ -78,7 +92,11 @@ contract USDeVault {
         uint256 toMint;
 
         // send cross-chain call to mint usdb tokenx
-        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, toMint);
+        bytes memory data = abi.encodeWithSignature(
+            "mint(address,uint256)",
+            susdb,
+            toMint
+        );
         router.call(usdb, data);
 
         emit Rebalanced();
