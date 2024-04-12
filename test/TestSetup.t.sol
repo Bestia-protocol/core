@@ -26,7 +26,6 @@ contract TestSetup is Test {
         router = new CrossChainRouter();
         vault = new USDeVault(
             address(router),
-            address(usde),
             address(susde),
             address(usdb),
             sink
@@ -44,6 +43,4 @@ contract TestSetup is Test {
         vm.prank(user);
         usde.approve(address(vault), type(uint256).max);
     }
-
-    
 }

@@ -20,10 +20,7 @@ contract Mock4626Vault is ERC4626 {
     // CONTRACTS
     MockUSDe public usde;
 
-    constructor(
-        MockUSDe _usde
-    ) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {
+    constructor(MockUSDe _usde) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {
         usde = _usde;
     }
-
 }
