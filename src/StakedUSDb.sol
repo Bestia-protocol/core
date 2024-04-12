@@ -8,6 +8,8 @@ import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.so
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {USDb} from "./USDb.sol";
 
+// Staked USDb Vault on Sei
+
 contract StakedUSDb is Ownable2Step, ERC20Permit, ERC4626 {
     error NonTransferrable();
 
