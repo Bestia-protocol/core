@@ -4,10 +4,11 @@ pragma solidity 0.8.19;
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Isusde} from "./interfaces/Isusde.sol";
 import {IRouter} from "./interfaces/IRouter.sol";
+import {Whitelisted} from "./Whitelisted.sol";
 
 // This is the contract you deposit susde into to mint USDb
 
-contract USDeVault {
+contract USDeVault is Whitelisted {
     using SafeERC20 for Isusde;
     using SafeERC20 for IERC20;
 
@@ -25,8 +26,9 @@ contract USDeVault {
 
     error RestrictedToRouter();
     error InsufficientAmount();
+    error CannotHarvest();
 
-    constructor(address _router, address _susde, address _usdb, address _susdb) {
+    constructor(address _router, address _susde, address _usdb, address _susdb) Whitelisted(msg.sender) {
         assert(_router != address(0));
         assert(_susde != address(0));
         assert(_usdb != address(0));
@@ -37,10 +39,10 @@ contract USDeVault {
         usdb = _usdb;
         susdb = _susdb;
 
-        susdeSharePrice = susde.convertToAssets(1);
+        susdeSharePrice = susde.convertToAssets(1e18);
     }
 
-    function stake(uint256 amount) external {
+    function stake(uint256 amount) external onlyWhitelisted {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
         uint256 amountToMint = susde.convertToAssets(amount);
@@ -60,9 +62,11 @@ contract USDeVault {
     }
 
     function harvest() external returns (uint256) {
-        uint256 newSusdeSharePrice = susde.convertToAssets(1);
-        assert(newSusdeSharePrice > susdeSharePrice);
-        uint256 amountToMint = susde.convertToAssets(newSusdeSharePrice - susdeSharePrice);
+        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+
+        // avoid harvesting if the share price is equal or has decreased
+        if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
+        uint256 amountToMint = newSusdeSharePrice - susdeSharePrice;
 
         // send cross-chain call to mint usdb tokenx
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, amountToMint);

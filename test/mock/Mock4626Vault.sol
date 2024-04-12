@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {MockUSDe} from "./MockUSDe.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Isusde} from "src/interfaces/Isusde.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -13,14 +12,5 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 contract Mock4626Vault is ERC4626 {
     using Math for uint256;
 
-    // STATE VARIABLES
-    uint256 public interestRate;
-    uint256 public constant FACTOR = 1e18;
-
-    // CONTRACTS
-    MockUSDe public usde;
-
-    constructor(MockUSDe _usde) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {
-        usde = _usde;
-    }
+    constructor(address _usde) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {}
 }

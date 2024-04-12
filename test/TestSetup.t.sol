@@ -21,7 +21,7 @@ contract TestSetup is Test {
 
     constructor() {
         usde = new MockUSDe(); // Mock USDe
-        susde = new Mock4626Vault(usde); // Mock StakedUSDeV2
+        susde = new Mock4626Vault(address(usde)); // Mock StakedUSDeV2
         usdb = new USDb(address(this));
         router = new CrossChainRouter();
         vault = new USDeVault(
@@ -35,6 +35,9 @@ contract TestSetup is Test {
             address(vault),
             address(usdb)
         );
+
+        vault.setUserStatus(user, true);
+        redeemer.setUserStatus(user, true);
     }
 
     function setUp() public {
@@ -42,5 +45,10 @@ contract TestSetup is Test {
         usdb.addMinter(address(redeemer));
         vm.prank(user);
         usde.approve(address(vault), type(uint256).max);
+
+        vm.startPrank(user);
+        susde.approve(address(vault), type(uint256).max);
+        usde.approve(address(susde), type(uint256).max);
+        vm.stopPrank();
     }
 }

@@ -12,21 +12,15 @@ contract USDeVaultTest is TestSetup {
         vm.startPrank(user);
 
         // user deposts USDe to sUSDe vault
-        usde.approve(address(susde), amount);
         susde.deposit(amount, user);
 
         uint256 userShares = susde.balanceOf(user);
         uint256 userAssets = susde.convertToAssets(userShares);
-        console2.log("user sUSDe Shares", userShares);
-        console2.log("user USDe Assets after convertToAssets()", userAssets);
 
         // user deposits sUSDe to USDeVault
-        susde.approve(address(vault), amount);
         vault.stake(susde.balanceOf(user));
 
         uint256 userUSDbBalance = usdb.balanceOf(user);
-
-        console2.log("user USDb balance", userUSDbBalance);
 
         // asserts that user USDb balance is equal to usde value of susde shares
         assertEq(userUSDbBalance, userAssets);
@@ -38,7 +32,6 @@ contract USDeVaultTest is TestSetup {
 
         // user deposts USDe to sUSDe vault
         vm.startPrank(user);
-        usde.approve(address(susde), amount);
         susde.deposit(amount, user);
         vm.stopPrank();
 
@@ -47,16 +40,12 @@ contract USDeVaultTest is TestSetup {
 
         uint256 userShares = susde.balanceOf(user);
         uint256 userAssets = susde.convertToAssets(userShares);
-        console2.log("user sUSDe Shares", userShares);
-        console2.log("user USDe Assets after convertToAssets()", userAssets);
 
         vm.startPrank(user);
-        susde.approve(address(vault), amount);
         vault.stake(susde.balanceOf(user));
         vm.stopPrank();
 
         uint256 userUSDbBalance = usdb.balanceOf(user);
-        console2.log("user USDb balance", userUSDbBalance);
 
         assertEq(userUSDbBalance, userAssets);
     }
@@ -67,20 +56,32 @@ contract USDeVaultTest is TestSetup {
 
         // user gets USDB per normal flow
         vm.startPrank(user);
-        usde.approve(address(susde), amount);
         susde.deposit(amount, user);
-        susde.approve(address(vault), amount);
         vault.stake(susde.balanceOf(user));
 
         uint256 userUSDbBalance = usdb.balanceOf(user);
-        console2.log("user USDb balance", userUSDbBalance);
 
         // user burns USDb to get USDe
         redeemer.burn(userUSDbBalance);
         uint256 susdeReceivedBack = susde.balanceOf(user);
         uint256 userUSDeBalance = susde.convertToAssets(susdeReceivedBack);
-        console2.log("user USDe balance", userUSDeBalance);
 
         assertEq(userUSDeBalance, amount);
+    }
+
+    function testHarvest() external {
+        uint256 amount = 1e18;
+        usde.mint(user, amount);
+
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        vm.stopPrank();
+
+        // simulate 100% profit
+        usde.mint(address(susde), amount);
+        vault.harvest();
+        // ERC4626 rounds down
+        assertEq(usdb.balanceOf(sink) + 1, amount);
     }
 }
