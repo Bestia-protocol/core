@@ -81,7 +81,8 @@ contract USDeVaultTest is TestSetup {
         // simulate 100% profit
         usde.mint(address(susde), amount);
         vault.harvest();
-        // ERC4626 rounds down
-        assertEq(usdb.balanceOf(sink) + 1, amount);
+
+        uint256 profit = amount * susde.balanceOf(address(vault)) - 1e18;
+        assertEq(usdb.balanceOf(sink), profit);
     }
 }

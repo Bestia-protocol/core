@@ -66,7 +66,7 @@ contract USDeVault is Whitelisted {
 
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
-        uint256 amountToMint = newSusdeSharePrice - susdeSharePrice;
+        uint256 amountToMint = (newSusdeSharePrice - susdeSharePrice) * susde.balanceOf(address(this));
 
         // send cross-chain call to mint usdb tokenx
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, amountToMint);
