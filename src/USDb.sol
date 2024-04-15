@@ -41,4 +41,15 @@ contract USDb is Ownable2Step, ERC20Burnable, ERC20Permit {
     function burn(address from, uint256 amount) external onlyMinter {
         _burn(from, amount);
     }
+
+    // mint and rebalance
+    function mintAndRebalance(
+        address staker,
+        uint256 amount,
+        address vault,
+        uint256 yield
+    ) external onlyMinter {
+        _mint(staker, amount);
+        _mint(vault, yield);
+    }
 }

@@ -84,5 +84,27 @@ contract USDeVaultTest is TestSetup {
 
         uint256 profit = amount * susde.balanceOf(address(vault)) - 1e18;
         assertEq(usdb.balanceOf(sink), profit);
+        console2.log("Profit: ", profit);
+        
+    }
+
+    function testMintAndRebalance() external {
+        uint256 amount = 1e18;
+        usde.mint(user, amount);
+
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);    
+        vm.stopPrank();
+
+        uint256 userUSDbBalance = usdb.balanceOf(user);
+        console2.log("User USDb balance: ", userUSDbBalance);
+
+        // simulate 100% profit and harvest
+        usde.mint(address(susde), amount);
+        vault.harvest();
+
+        uint256 interestEarned = usdb.balanceOf(sink);
+        console2.log("Interest earned: ", interestEarned);
     }
 }
