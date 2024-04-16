@@ -13,7 +13,7 @@ import {USDb} from "./USDb.sol";
 contract StakedUSDb is Ownable2Step, ERC20Permit, ERC4626 {
     error NonTransferrable();
 
-    constructor(IERC20 _asset, address _admin) ERC20("Staked USDb", "sUSDb") ERC4626(_asset) ERC20Permit("sUSDb") {
+    constructor(IERC20 _asset, address _admin) ERC20("Staked USDb", "sUSDb") ERC4626(IERC20(_asset)) ERC20Permit("sUSDb") {
         assert(_admin != address(0));
         _transferOwnership(_admin);
     }
@@ -22,7 +22,7 @@ contract StakedUSDb is Ownable2Step, ERC20Permit, ERC4626 {
         return ERC4626.decimals();
     }
 
-    function _beforeTokenTransfer(address from, address to, uint256) internal override {
-        if (from != address(0) && to != address(0)) revert NonTransferrable();
-    }
+    // function _beforeTokenTransfer(address from, address to, uint256) internal override {
+    //     if (from != address(0) && to != address(0)) revert NonTransferrable();
+    // }
 }

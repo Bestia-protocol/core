@@ -67,7 +67,7 @@ contract USDeVault is Whitelisted {
 
     function stakeAndRebalance(uint256 amount) external onlyWhitelisted {
         susde.safeTransferFrom(msg.sender, address(this), amount);
-        
+
         uint256 amountToMint = susde.convertToAssets(amount);
         uint256 rebalanceAmount = rebalance();
 
@@ -80,7 +80,6 @@ contract USDeVault is Whitelisted {
         );
 
         router.call(usdb, data);
-
     }
 
     function unstake(address to, uint256 amount) external {
@@ -94,7 +93,6 @@ contract USDeVault is Whitelisted {
 
     function harvest() public returns (uint256) {
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
-        console2.log("newSusdeSharePrice: ", newSusdeSharePrice);
 
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
@@ -122,7 +120,7 @@ contract USDeVault is Whitelisted {
         if (newSusdeSharePrice > susdeSharePrice) {
             uint256 amountToMint = (newSusdeSharePrice - susdeSharePrice) *
                 susde.balanceOf(address(this));
-            susdeSharePrice = newSusdeSharePrice; 
+            susdeSharePrice = newSusdeSharePrice;
             return amountToMint;
         }
 

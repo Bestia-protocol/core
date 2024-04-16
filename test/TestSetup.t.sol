@@ -6,8 +6,10 @@ import {MockUSDe} from "./mock/MockUSDe.sol";
 import {Mock4626Vault} from "./mock/Mock4626Vault.sol";
 import {USDb} from "../src/USDb.sol";
 import {USDeVault} from "../src/USDeVault.sol";
+import {StakedUSDb} from "../src/StakedUSDb.sol";
 import {USDeRedeemer} from "../src/USDeRedeemer.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract TestSetup is Test {
     address public constant sink = address(0x1);
@@ -18,6 +20,7 @@ contract TestSetup is Test {
     CrossChainRouter public immutable router;
     USDeVault public immutable vault;
     USDeRedeemer public immutable redeemer;
+    StakedUSDb public immutable susdb;
 
     constructor() {
         usde = new MockUSDe(); // Mock USDe
@@ -35,6 +38,7 @@ contract TestSetup is Test {
             address(vault),
             address(usdb)
         );
+        susdb = new StakedUSDb(usdb, address(this));
 
         vault.setUserStatus(user, true);
         redeemer.setUserStatus(user, true);

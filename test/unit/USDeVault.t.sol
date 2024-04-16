@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {TestSetup} from "../TestSetup.t.sol";
 import {console2} from "forge-std/Test.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract USDeVaultTest is TestSetup {
     function testMintUSDbByStakingUSDe() external {
@@ -80,12 +81,16 @@ contract USDeVaultTest is TestSetup {
 
         // simulate 100% profit
         usde.mint(address(susde), amount);
-        vault.harvest();
+        vault.harvest();        
 
         uint256 profit = amount * susde.balanceOf(address(vault)) - 1e18;
         assertEq(usdb.balanceOf(sink), profit);
+
         console2.log("Profit: ", profit);
-        
+        console2.log("amount: ", amount);
+        console2.log("susde balance of vault: ", susde.balanceOf(address(vault)));
+        console2.log("usdb balance of sink: ", usdb.balanceOf(sink));
+
     }
 
     function testMintAndRebalance() external {
