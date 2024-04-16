@@ -26,19 +26,19 @@ contract TestSetup is Test {
         usde = new MockUSDe(); // Mock USDe
         susde = new Mock4626Vault(address(usde)); // Mock StakedUSDeV2
         usdb = new USDb(address(this));
+        susdb = new StakedUSDb(usdb, address(this));
         router = new CrossChainRouter();
         vault = new USDeVault(
             address(router),
             address(susde),
             address(usdb),
-            sink
+            address(susdb)
         );
         redeemer = new USDeRedeemer(
             address(router),
             address(vault),
             address(usdb)
         );
-        susdb = new StakedUSDb(usdb, address(this));
 
         vault.setUserStatus(user, true);
         redeemer.setUserStatus(user, true);

@@ -84,7 +84,7 @@ contract USDeVaultTest is TestSetup {
         vault.harvest();        
 
         uint256 profit = amount * susde.balanceOf(address(vault)) - 1e18;
-        assertEq(usdb.balanceOf(sink), profit);
+        assertEq(usdb.balanceOf(address(susdb)), profit);
 
         console2.log("Profit: ", profit);
         console2.log("amount: ", amount);
@@ -93,6 +93,8 @@ contract USDeVaultTest is TestSetup {
 
     }
 
+    
+    // finish this later
     function testMintAndRebalance() external {
         uint256 amount = 1e18;
         usde.mint(user, amount);
