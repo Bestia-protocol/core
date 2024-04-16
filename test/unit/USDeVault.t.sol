@@ -74,35 +74,28 @@ contract USDeVaultTest is TestSetup {
         uint256 amount = 1e18;
         usde.mint(user, amount);
 
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
         vm.startPrank(user);
         susde.deposit(amount, user);
-        console2.log("usde amount deposited to susde vault by user: ", amount);
         vault.stake(amount);
         vm.stopPrank();
 
-        console2.log(
-            "susde balance of vault: ",
-            susde.balanceOf(address(vault))
-        );
+        // simulate 100% profit and harvest to send to staked USDb vault
+        usde.mint(address(susde), amount);        
 
-        // simulate 100% profit
-        usde.mint(address(susde), amount);
+        // check interest earned by the vault's position in USDe terms by subtracing the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
-        console2.log(
-            "usde balance of susde vault after minting 1e18 interest: ",
-            usde.balanceOf(address(susde))
-        );
-
+        console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
+        
+        // harvest the interest to mint USDb to staked USDb vault
         vault.harvest();
-        console2.log(
-            "usdb balance of susdb after harvest: ",
-            usdb.balanceOf(address(susdb))
-        );
+        
+        // check the USDb minted by the harvest function
+        uint256 usdbMinted = usdb.balanceOf(address(susdb));
+        console2.log("usdbMinted by harvest function ", usdbMinted);
 
-        uint256 profit = amount * susde.balanceOf(address(vault)) - 1e18;
-        assertEq(usdb.balanceOf(address(susdb)), profit);
-
-        console2.log("Profit: ", profit);
+        assertEq(usdbMinted, interestEarnedInUSDe);
     }
 
     // finish this later

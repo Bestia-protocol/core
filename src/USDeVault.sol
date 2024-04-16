@@ -5,6 +5,7 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Isusde} from "./interfaces/Isusde.sol";
 import {IRouter} from "./interfaces/IRouter.sol";
 import {Whitelisted} from "./Whitelisted.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // temp import for testing, delete before deployment
 import {console2} from "forge-std/Test.sol";
@@ -14,6 +15,7 @@ import {console2} from "forge-std/Test.sol";
 contract USDeVault is Whitelisted {
     using SafeERC20 for Isusde;
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     Isusde public immutable susde;
     IERC20 public immutable usde;
@@ -96,8 +98,13 @@ contract USDeVault is Whitelisted {
 
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
-        uint256 amountToMint = (newSusdeSharePrice - susdeSharePrice) *
-            susde.balanceOf(address(this));
+        uint256 delta = newSusdeSharePrice - susdeSharePrice;
+
+        uint256 amountToMint = Math.mulDiv(
+            delta,
+            susde.balanceOf(address(this)),
+            1e18
+        );
 
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
