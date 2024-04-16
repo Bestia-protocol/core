@@ -14,6 +14,8 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 contract TestSetup is Test {
     address public constant sink = address(0x1);
     address public constant user = address(0x2);
+    address public constant user2 = address(0x3);
+    address public constant user3 = address(0x4);
     MockUSDe public immutable usde;
     Mock4626Vault internal immutable susde;
     USDb public immutable usdb;
