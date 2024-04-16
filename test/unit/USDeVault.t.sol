@@ -92,10 +92,11 @@ contract USDeVaultTest is TestSetup {
         vault.harvest();
         
         // check the USDb minted by the harvest function
-        uint256 usdbMinted = usdb.balanceOf(address(susdb));
-        console2.log("usdbMinted by harvest function ", usdbMinted);
+        uint256 usdbMintedByHarvest = usdb.balanceOf(address(susdb));
+        console2.log("usdbMinted by harvest function ", usdbMintedByHarvest);
 
-        assertEq(usdbMinted, interestEarnedInUSDe);
+        // assert that the interest earned in USDe is equal to the USDb minted by the harvest function
+        assertEq(usdbMintedByHarvest, interestEarnedInUSDe);
     }
 
     // finish this later
