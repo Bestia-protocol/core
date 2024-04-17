@@ -73,15 +73,23 @@ contract HarvestTest is TestSetup {
         assertApproxEqAbs(usdeBalance, amount + yield, tolerance);
     }
 
-    function test2_WIP() public {
+    function testHarvestForSecondUser() public {
+        uint256 susdeVaultBalance = 100e18;
         uint256 amount = 1e18;
         uint256 yield = 1e16; // 1% yield
-        usde.mint(user, amount);
+
+        // large initial deposit to susde to simulate active vault
+        usde.mint(user3, susdeVaultBalance);
+        vm.startPrank(user3);
+        usde.approve(address(susde), susdeVaultBalance);
+        susde.deposit(susdeVaultBalance, user3);
+        vm.stopPrank();
 
         // same setup as testStakeUsdbAndHarvest
-
+        usde.mint(user, amount);
         vm.startPrank(user);
-        
+
+        // assert vault is empty to start
         assertEq(usdb.balanceOf(address(susdb)), 0);
 
         // user deposits USDe to sUSDe vault and stakes to get USDB
@@ -93,62 +101,80 @@ contract HarvestTest is TestSetup {
         usdb.approve(address(susdb), userUSDbStartingBalance);
         susdb.deposit(usdb.balanceOf(user), user);
 
+        // assert the total in vault is equal to the user's USDb deposit
+        assertEq(usdb.balanceOf(address(susdb)), amount);
+
         vm.stopPrank();
 
-        // add yield to sUSDe harvest yield to USDB
+        // add yield to sUSDe and harvest yield to USDB
         usde.mint(address(susde), yield);
+
+        // check the usde value of the vault shares minus the user's deposit
+        uint256 addedYield = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        // harvest the added yield to USDb
         vault.harvest();
+
+        // assert total in susdb is equal to the user's USDb deposit + yield after harvesting
+        assertEq(usdb.balanceOf(address(susdb)), amount + addedYield);
+
+        console2.log("usdb in susdb", usdb.balanceOf(address(susdb)));
 
         vm.startPrank(user);
 
         // user unstakes and withdraws to USDe
         susdb.redeem(susdb.balanceOf(user), user, user);
+
+        // assert vault balance is 0 after redeem (with rounding error of 1)
+        assertEq(usdb.balanceOf(address(susdb)) - 1, 0);
+
         redeemer.burn(usdb.balanceOf(user));
         susde.redeem(susde.balanceOf(user), user, user);
 
         // assert the user has received the correct usde balance after rounding
-        uint256 tolerance = 3;
-        assertEq(usde.balanceOf(user) + tolerance, amount + yield);
+        uint256 tolerance = 2;
+        assertEq(usde.balanceOf(user) + tolerance, amount + addedYield);
+
+        // console2.log("total usde in susde", usde.balanceOf(address(susde)));
+        // console2.log("total shares of susde", susde.totalSupply());
 
         vm.stopPrank();
 
-        // user2 deposits USDe to sUSDe vault and stakes to get USDb
         usde.mint(user2, amount);
         vm.startPrank(user2);
 
+        // user2 deposits USDe to sUSDe vault and stakes to get USDb
         usde.approve(address(susde), amount);
         susde.deposit(amount, user2);
-        uint256 user2SusdeBalance = susde.balanceOf(user2);
-        console2.log("sUSDe balance of user2 after deposit", user2SusdeBalance);
-
         susde.approve(address(vault), amount);
         vault.stake(susde.balanceOf(user2));
-        uint256 user2UsdbStartingBalance = usdb.balanceOf(user2);
-        console2.log("usdb balance of user2", user2UsdbStartingBalance);
 
         // assert that the user2 has received the correct USDb balance
-        assertEq(user2UsdbStartingBalance, amount);
+        assertEq(usdb.balanceOf(user2) + 1, amount);
+        uint256 user2UsdbStartingBalance = usdb.balanceOf(user2);
 
         // user2 deposits received USDB to sUSDb
-        usdb.approve(address(susdb), user2UsdbStartingBalance);
-        susdb.deposit(user2UsdbStartingBalance, user2);
-        console2.log("susdb balance of user2", susdb.balanceOf(user2));
+        usdb.approve(address(susdb), usdb.balanceOf(user2));
+        susdb.deposit(usdb.balanceOf(user2), user2);
 
         // assert susdb balance of user2 is equal to their USDb deposit
         assertEq(
             user2UsdbStartingBalance,
-            susdb.convertToAssets(susdb.balanceOf(user2))
+            susdb.convertToAssets(susdb.balanceOf(user2)) + 1
         );
 
         vm.stopPrank();
 
-        console2.log(
-            "usdb balance of susdb before harvest",
-            usdb.balanceOf(address(susdb))
-        );
-
         // add yield to sUSDe harvest yield to USDB
         usde.mint(address(susde), yield); // 1e16 USDe
+        
+        // amount of yield to harvest
+        uint256 yieldDueToUser2 = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+        
         vault.harvest();
 
         console2.log(
@@ -161,13 +187,13 @@ contract HarvestTest is TestSetup {
         );
         console2.log("user2EndingBalance", user2EndingBalance);
 
-        uint256 totalUsdbinSusdb = usdb.balanceOf(address(susdb));
-        console2.log("totalUsdbinSusdb", totalUsdbinSusdb);
+        // uint256 totalUsdbinSusdb = usdb.balanceOf(address(susdb));
+        // console2.log("totalUsdbinSusdb", totalUsdbinSusdb);
 
         uint256 interestEarned2 = user2EndingBalance - user2UsdbStartingBalance;
         console2.log("interestEarned2", interestEarned2);
 
-        // assert the user2 has received the correct usdb yield after rounding
-        assertEq(interestEarned2, yield);
+        // assert user2 has received the correct usdb yield after rounding
+        assertEq(interestEarned2 + 2, yieldDueToUser2);
     }
 }
