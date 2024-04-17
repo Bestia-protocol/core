@@ -44,6 +44,9 @@ contract TestSetup is Test {
 
         vault.setUserStatus(user, true);
         redeemer.setUserStatus(user, true);
+
+        vault.setUserStatus(user2, true);
+        redeemer.setUserStatus(user2, true);
     }
 
     function setUp() public {
