@@ -8,9 +8,6 @@ contract HarvestTest is TestSetup {
     // 1. a user deposits USDe to sUSDe vault and then recieves and stakes USDB
     // 2. then add yield on sUSDe and harvest to USDB
     // 3. the user unstakes and withdraws to USDe
-    // 4. user2 deposits USDe to sUSDe vault and then receives and stakes USDB
-    // 5. then add yield on sUSDe and harvest to USDB
-
     function testStakeUsdbAndHarvest() public {
         uint256 amount = 1e18;
         uint256 yield = 1e16; // 1% yield
@@ -73,17 +70,33 @@ contract HarvestTest is TestSetup {
         assertApproxEqAbs(usdeBalance, amount + yield, tolerance);
     }
 
+    // 0. large initial deposit to susde to simulate active vault
+    // 1. a user deposits USDe to sUSDe vault and then recieves and stakes USDB
+    // 2. then add yield on sUSDe and harvest to USDB
+    // 3. the user unstakes and withdraws to USDe
+    // 4. user2 deposits USDe to sUSDe vault and then receives and stakes USDB
+    // 5. then add yield on sUSDe and harvest to USDB
     function testHarvestForSecondUser() public {
         uint256 susdeVaultBalance = 100e18;
         uint256 amount = 1e18;
         uint256 yield = 1e16; // 1% yield
 
-        // large initial deposit to susde to simulate active vault
+        /**
+         * @dev large initial deposit to susde to simulate active vault
+         */
+
         usde.mint(user3, susdeVaultBalance);
         vm.startPrank(user3);
         usde.approve(address(susde), susdeVaultBalance);
         susde.deposit(susdeVaultBalance, user3);
         vm.stopPrank();
+
+        /**
+         * @dev a user deposits USDe to sUSDe vault and then recieves and stakes USDB
+         * then add yield on sUSDe and harvest to USDB
+         * the user unstakes and withdraws to USDe
+         * assert that the user has received the correct usde balance after rounding
+         */
 
         // same setup as testStakeUsdbAndHarvest
         usde.mint(user, amount);
@@ -137,10 +150,12 @@ contract HarvestTest is TestSetup {
         uint256 tolerance = 2;
         assertEq(usde.balanceOf(user) + tolerance, amount + addedYield);
 
-        // console2.log("total usde in susde", usde.balanceOf(address(susde)));
-        // console2.log("total shares of susde", susde.totalSupply());
-
         vm.stopPrank();
+
+        /**
+         * @dev user2 deposits USDe to sUSDe vault and then receives and stakes USDB
+         * then add yield on sUSDe and harvest to USDB
+         */
 
         usde.mint(user2, amount);
         vm.startPrank(user2);
@@ -169,12 +184,12 @@ contract HarvestTest is TestSetup {
 
         // add yield to sUSDe harvest yield to USDB
         usde.mint(address(susde), yield); // 1e16 USDe
-        
+
         // amount of yield to harvest
         uint256 yieldDueToUser2 = susde.convertToAssets(
             susde.balanceOf(address(vault))
         ) - amount;
-        
+
         vault.harvest();
 
         console2.log(
