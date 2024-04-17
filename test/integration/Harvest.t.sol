@@ -81,6 +81,8 @@ contract HarvestTest is TestSetup {
         // same setup as testStakeUsdbAndHarvest
 
         vm.startPrank(user);
+        
+        assertEq(usdb.balanceOf(address(susdb)), 0);
 
         // user deposits USDe to sUSDe vault and stakes to get USDB
         susde.deposit(amount, user);

@@ -81,22 +81,62 @@ contract USDeVaultTest is TestSetup {
         vm.stopPrank();
 
         // simulate 100% profit and harvest to send to staked USDb vault
-        usde.mint(address(susde), amount);        
+        usde.mint(address(susde), amount);
 
         // check interest earned by the vault's position in USDe terms by subtracing the initial amount
-        uint256 interestEarnedInUSDe = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
 
         console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
-        
+
         // harvest the interest to mint USDb to staked USDb vault
         vault.harvest();
-        
+
         // check the USDb minted by the harvest function
         uint256 usdbMintedByHarvest = usdb.balanceOf(address(susdb));
         console2.log("usdbMinted by harvest function ", usdbMintedByHarvest);
 
         // assert that the interest earned in USDe is equal to the USDb minted by the harvest function
         assertEq(usdbMintedByHarvest, interestEarnedInUSDe);
+    }
+
+    function testMultipleHarvest() external {
+        uint256 amount = 1e18;
+        usde.mint(user, amount);
+
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        vm.stopPrank();
+
+        // simulate 100% profit and harvest to send to staked USDb vault
+        usde.mint(address(susde), amount);
+
+        // check interest earned by the vault's position in USDe terms by subtracting the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        // harvest the interest to mint USDb to staked USDb vault
+        vault.harvest();
+
+        // check the USDb minted by the harvest function
+        uint256 usdbMintedByHarvest1 = usdb.balanceOf(address(susdb));
+
+        // simulate another 100% profit and harvest to send to staked USDb vault
+        usde.mint(address(susde), amount);
+        vault.harvest();
+
+        // check the USDb minted by the harvest function
+        uint256 usdbMintedByHarvest2 = usdb.balanceOf(address(susdb)) -
+            usdbMintedByHarvest1;
+
+        assertEq(
+            usdbMintedByHarvest1 + usdbMintedByHarvest2,
+            interestEarnedInUSDe * 2
+        );
     }
 
     // finish this later
