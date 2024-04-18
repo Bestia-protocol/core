@@ -142,21 +142,69 @@ contract USDeVaultTest is TestSetup {
     // finish this later
     function testMintAndRebalance() external {
         uint256 amount = 1e18;
+        uint256 roundingError = 5; // max rounding error of 5
         usde.mint(user, amount);
+        usde.mint(user2, amount);
 
+        // user transaction flow to mint USDb and stake to sUSDb vault
         vm.startPrank(user);
         susde.deposit(amount, user);
-        vault.stake(amount);
+        vault.stakeAndHarvest(amount);
+        usdb.approve(address(susdb), usdb.balanceOf(user));
+        susdb.deposit(usdb.balanceOf(user), user);
         vm.stopPrank();
 
-        uint256 userUSDbBalance = usdb.balanceOf(user);
-        console2.log("User USDb balance: ", userUSDbBalance);
+        // assert user has the correct 1e18 USDb balance in sUSDb vault
+        assertApproxEqAbs(
+            susdb.convertToAssets(susdb.balanceOf(user)),
+            amount,
+            roundingError
+        );
 
-        // simulate 100% profit and harvest
+        // simulate 1e18 profit (100%) and harvest to send to staked USDb vault
         usde.mint(address(susde), amount);
-        vault.harvest();
 
-        uint256 interestEarned = usdb.balanceOf(sink);
-        console2.log("Interest earned: ", interestEarned);
+        // assert balance of USDe in sUSDe Vault is equal to user deposit and 100% profit
+        assertApproxEqAbs(
+            susde.convertToAssets(susde.balanceOf(address(vault))),
+            amount * 2, // 2e18
+            roundingError
+        );
+
+        // user transaction flow to mint USDb and stake to sUSDb vault
+        vm.startPrank(user2);
+        susde.deposit(amount, user2);
+        vault.stakeAndHarvest(susde.balanceOf(user2));
+        susdb.deposit(usdb.balanceOf(user2), user2);
+        vm.stopPrank();
+
+        // assert balance of USDe in sUSDe Vault is equal to user and user2 deposit and 100% profit
+        assertApproxEqAbs(
+            susde.convertToAssets(susde.balanceOf(address(vault))),
+            amount * 3, // 3e18
+            roundingError
+        );
+
+        // assert user2 has not earned any profit on their 1e18 USDb deposit
+        assertApproxEqAbs(
+            susdb.convertToAssets(susdb.balanceOf(user2)),
+            amount, // 1e18
+            roundingError
+        );
+        console2.log(
+            "user balance",
+            susdb.convertToAssets(susdb.balanceOf(user))
+        );
+
+        // assert user has earned 100% profit on their 1e18 USDb deposit
+        assertApproxEqAbs(
+            susdb.convertToAssets(susdb.balanceOf(user)),
+            amount * 2, // 2e18
+            roundingError
+        );
+        console2.log(
+            "user2 balance",
+            susdb.convertToAssets(susdb.balanceOf(user2))
+        );
     }
 }

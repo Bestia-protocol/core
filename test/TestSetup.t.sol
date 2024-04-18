@@ -52,12 +52,19 @@ contract TestSetup is Test {
     function setUp() public {
         usdb.addMinter(address(router));
         usdb.addMinter(address(redeemer));
-        vm.prank(user);
-        usde.approve(address(vault), type(uint256).max);
 
         vm.startPrank(user);
+        usde.approve(address(vault), type(uint256).max);
         susde.approve(address(vault), type(uint256).max);
         usde.approve(address(susde), type(uint256).max);
+        usdb.approve(address(susdb), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        usde.approve(address(vault), type(uint256).max);
+        susde.approve(address(vault), type(uint256).max);
+        usde.approve(address(susde), type(uint256).max);
+        usdb.approve(address(susdb), type(uint256).max);
         vm.stopPrank();
     }
 }

@@ -28,7 +28,6 @@ contract USDeVault is Whitelisted {
     event Stake(address indexed user, uint256 amount);
     event Unstake(address indexed user, uint256 amount);
     event Harvested(uint256 minted);
-    event Rebalanced(uint256 minted);
 
     error RestrictedToRouter();
     error InsufficientAmount();
@@ -53,6 +52,7 @@ contract USDeVault is Whitelisted {
         susdeSharePrice = susde.convertToAssets(1e18);
     }
 
+    // simple stake function to mint USDb with sUSDe deposits
     function stake(uint256 amount) external onlyWhitelisted {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
@@ -67,17 +67,20 @@ contract USDeVault is Whitelisted {
         emit Stake(msg.sender, amountToMint);
     }
 
-    function stakeAndRebalance(uint256 amount) external onlyWhitelisted {
-        susde.safeTransferFrom(msg.sender, address(this), amount);
-
-        uint256 amountToMint = susde.convertToAssets(amount);
+    // function to stake and rebalance the interest earned on sUSDb deposits
+    function stakeAndHarvest(uint256 amount) external onlyWhitelisted {
+        // first create the additional USDb to mint based on sUSDe deposits
         uint256 rebalanceAmount = rebalance();
+        // then calculate the amount of USDb to mint based on the incoming sUSDe deposit
+        uint256 amountToMint = susde.convertToAssets(amount);
+
+        susde.safeTransferFrom(msg.sender, address(this), amount);
 
         bytes memory data = abi.encodeWithSignature(
             "mintAndRebalance(address,uint256,address,uint256)",
             msg.sender,
             amountToMint,
-            address(this),
+            address(susdb),
             rebalanceAmount
         );
 
@@ -93,18 +96,15 @@ contract USDeVault is Whitelisted {
         emit Unstake(msg.sender, amountToRedeem);
     }
 
+    // public function to harvest the yield and mint USDb
     function harvest() public returns (uint256) {
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
 
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
-        uint256 delta = newSusdeSharePrice - susdeSharePrice;
 
-        uint256 amountToMint = Math.mulDiv(
-            delta,
-            susde.balanceOf(address(this)),
-            1e18
-        );
+        // calls the rebalance function to calculate the amount to mint
+        uint256 amountToMint = rebalance();
 
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
@@ -120,17 +120,22 @@ contract USDeVault is Whitelisted {
         return amountToMint;
     }
 
-    function rebalance() internal returns (uint256) {
+    function rebalance() internal view returns (uint256) {
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
 
         // Execute rebalancing only if the share price has increased
         if (newSusdeSharePrice > susdeSharePrice) {
-            uint256 amountToMint = (newSusdeSharePrice - susdeSharePrice) *
-                susde.balanceOf(address(this));
-            susdeSharePrice = newSusdeSharePrice;
+            uint256 delta = newSusdeSharePrice - susdeSharePrice;
+
+            uint256 amountToMint = Math.mulDiv(
+                delta,
+                susde.balanceOf(address(this)),
+                1e18
+            );
+
             return amountToMint;
         }
 
-        return 0; // Return zero if no rebalancing occurred
+        return 0; // Return zero if no rebalancing required
     }
 }
