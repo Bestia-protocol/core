@@ -139,8 +139,8 @@ contract USDeVaultTest is TestSetup {
         );
     }
 
-    // finish this later
-    function testMintAndRebalance() external {
+    // user deposits and also calls harvest to mint USDb to staked USDb vaultf
+    function testStakeAndHarvest() external {
         uint256 amount = 1e18;
         uint256 roundingError = 5; // max rounding error of 5
         usde.mint(user, amount);
