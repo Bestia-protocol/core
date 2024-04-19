@@ -91,9 +91,11 @@ contract USDeVault is Whitelisted {
         if (msg.sender != address(router)) revert RestrictedToRouter();
 
         uint256 amountToRedeem = susde.convertToShares(amount);
-        susde.safeTransfer(to, amountToRedeem);
+        uint256 exitInterest = exitRebalance(amount);
+        
+        susde.safeTransfer(to, amountToRedeem + exitInterest);
 
-        emit Unstake(msg.sender, amountToRedeem);
+        emit Unstake(msg.sender, amountToRedeem + exitInterest);
     }
 
     // public function to harvest the yield and mint USDb
@@ -137,5 +139,23 @@ contract USDeVault is Whitelisted {
         }
 
         return 0; // Return zero if no rebalancing required
+    }
+
+    // calculates any additional sUSDe to return to user based on the current share price vs the share price at last harvest
+    function exitRebalance(uint256 amount) internal view returns (uint256) {
+        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+
+        if (newSusdeSharePrice > susdeSharePrice) {
+            uint256 delta = newSusdeSharePrice - susdeSharePrice;
+
+            uint256 exitInterest = Math.mulDiv(
+                delta,
+                susde.convertToShares(amount),
+                1e18
+            );
+
+            return exitInterest;
+        }
+        return 0; // Return zero if no exit interest due
     }
 }

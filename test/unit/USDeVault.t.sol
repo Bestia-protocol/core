@@ -139,7 +139,7 @@ contract USDeVaultTest is TestSetup {
         );
     }
 
-    // user deposits and also calls harvest to mint USDb to staked USDb vaultf
+    // user deposits and also calls harvest to mint USDb to staked USDb vault
     function testStakeAndHarvest() external {
         uint256 amount = 1e18;
         uint256 roundingError = 5; // max rounding error of 5
@@ -205,6 +205,53 @@ contract USDeVaultTest is TestSetup {
         console2.log(
             "user2 balance",
             susdb.convertToAssets(susdb.balanceOf(user2))
+        );
+    }
+
+    // test a user withdrawing before harvest called
+    function testUnstakeBeforeHarvest() external {
+        uint256 amount = 1e18;
+        uint256 roundingError = 5; // max rounding error of 5
+        usde.mint(user, amount);
+
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        susdb.deposit(usdb.balanceOf(user), user);
+        vm.stopPrank();
+
+        console2.log(
+            "user balance",
+            susdb.convertToAssets(susdb.balanceOf(user))
+        );
+
+        // simulate 100% profit but no harvest called
+        usde.mint(address(susde), amount);
+
+        // check interest earned by the vault's position in USDe terms by subtracing the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
+
+        // user unstakes before harvest is called
+        vm.startPrank(user);
+        susdb.redeem(susdb.balanceOf(user), user, user);
+        redeemer.burn(usdb.balanceOf(user));
+
+        uint256 userFinalUSDeBalance = susde.convertToAssets(
+            susde.balanceOf(user)
+        );
+
+        console2.log("user balance", userFinalUSDeBalance);
+
+        // assert the final balance of the user is equal to their initial deposit plus interest earned
+        assertApproxEqAbs(
+            userFinalUSDeBalance,
+            amount + interestEarnedInUSDe,
+            roundingError
         );
     }
 }
