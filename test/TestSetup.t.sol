@@ -16,6 +16,8 @@ contract TestSetup is Test {
     address public constant user = address(0x2);
     address public constant user2 = address(0x3);
     address public constant user3 = address(0x4);
+    address public constant user4 = address(0x5);
+
     MockUSDe public immutable usde;
     Mock4626Vault internal immutable susde;
     USDb public immutable usdb;
@@ -47,6 +49,12 @@ contract TestSetup is Test {
 
         vault.setUserStatus(user2, true);
         redeemer.setUserStatus(user2, true);
+
+        vault.setUserStatus(user3, true);
+        redeemer.setUserStatus(user3, true);
+
+        vault.setUserStatus(user4, true);
+        redeemer.setUserStatus(user4, true);
     }
 
     function setUp() public {
@@ -61,6 +69,20 @@ contract TestSetup is Test {
         vm.stopPrank();
 
         vm.startPrank(user2);
+        usde.approve(address(vault), type(uint256).max);
+        susde.approve(address(vault), type(uint256).max);
+        usde.approve(address(susde), type(uint256).max);
+        usdb.approve(address(susdb), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(user3);
+        usde.approve(address(vault), type(uint256).max);
+        susde.approve(address(vault), type(uint256).max);
+        usde.approve(address(susde), type(uint256).max);
+        usdb.approve(address(susdb), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(user4);
         usde.approve(address(vault), type(uint256).max);
         susde.approve(address(vault), type(uint256).max);
         usde.approve(address(susde), type(uint256).max);
