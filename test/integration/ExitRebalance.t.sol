@@ -50,7 +50,7 @@ contract ExitRebalanceTest is TestSetup {
     function setupUserAsSusdbStaker(address _user) public {
         vm.startPrank(_user);
         susde.deposit(amount, _user);
-        vault.stakeAndHarvest(susde.balanceOf(_user));
+        // vault.stakeAndHarvest(susde.balanceOf(_user));
         susdb.deposit(usdb.balanceOf(_user), _user);
         vm.stopPrank();
     }
