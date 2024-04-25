@@ -139,49 +139,58 @@ contract USDeVaultTest is TestSetup {
         );
     }
 
-    // test a user withdrawing before harvest called
-    function testUnstakeBeforeHarvest() external {
+    // test a cache is updated when USDb is minted is deposited to the vault
+    function testCacheOnDeposit() external {
         uint256 amount = 1e18;
         uint256 roundingError = 5; // max rounding error of 5
         usde.mint(user, amount);
+        usde.mint(user2, amount);
 
         // user deposits USDe to sUSDe vault, and then stakes to get USDb
         vm.startPrank(user);
         susde.deposit(amount, user);
         vault.stake(amount);
         susdb.deposit(usdb.balanceOf(user), user);
-        vm.stopPrank();
+        vm.stopPrank();    
 
-        console2.log(
-            "user balance",
-            susdb.convertToAssets(susdb.balanceOf(user))
-        );
+        console2.log("cacheForHarvest before mint ", vault.cacheForHarvest());    
 
         // simulate 100% profit but no harvest called
         usde.mint(address(susde), amount);
 
-        // check interest earned by the vault's position in USDe terms by subtracing the initial amount
+        console2.log("cacheForHarvest after mint ", vault.cacheForHarvest());  
+
+        console2.log("total assets in susde after mint ", susde.convertToAssets(susde.totalSupply()));
+        console2.log("total assets in vault after mint ", susde.convertToAssets(susde.balanceOf(address(vault))));
+
+        // check interest earned by the vault's position in USDe terms by subtracting the initial amount
         uint256 interestEarnedInUSDe = susde.convertToAssets(
             susde.balanceOf(address(vault))
         ) - amount;
 
         console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
 
-        // user unstakes before harvest is called
+        vm.startPrank(user2);
+        susde.deposit(amount, user2);
+        vault.stake(susdb.balanceOf(user2));
+        susdb.deposit(usdb.balanceOf(user2), user2);
+        vm.stopPrank();
+
+        // user unstakes and withdraws to USDe
         vm.startPrank(user);
         susdb.redeem(susdb.balanceOf(user), user, user);
         redeemer.burn(usdb.balanceOf(user));
+        susde.redeem(susde.balanceOf(user), user, user);
+        vm.stopPrank();
 
-        uint256 userFinalUSDeBalance = susde.convertToAssets(
-            susde.balanceOf(user)
-        );
+        // check balance in the cache
+        uint256 cacheAfterDeposit = vault.cacheForHarvest();
+        console2.log("cacheAfterDeposit ", cacheAfterDeposit);
 
-        console2.log("user balance", userFinalUSDeBalance);
-
-        // assert the final balance of the user is equal to their initial deposit plus interest earned
+        // assert that the cache is updated with the interest earned
         assertApproxEqAbs(
-            userFinalUSDeBalance,
-            amount + interestEarnedInUSDe,
+            cacheAfterDeposit,
+            interestEarnedInUSDe,
             roundingError
         );
     }

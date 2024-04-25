@@ -75,6 +75,7 @@ contract USDeVault is Whitelisted {
         if (newSusdeSharePrice > susdeSharePrice) {
             uint256 tokensForCache = rebalance(newSusdeSharePrice);
             cacheForHarvest += tokensForCache;
+            susdeSharePrice = newSusdeSharePrice;
 
             emit CacheUpdated(tokensForCache);
         }
@@ -95,6 +96,7 @@ contract USDeVault is Whitelisted {
         if (newSusdeSharePrice > susdeSharePrice) {
             uint256 tokensForCache = rebalance(newSusdeSharePrice);
             cacheForHarvest += tokensForCache;
+            susdeSharePrice = newSusdeSharePrice;
 
             emit CacheUpdated(tokensForCache);
         }

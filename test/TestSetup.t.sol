@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {Test, console2} from "forge-std/Test.sol";
 import {MockUSDe} from "./mock/MockUSDe.sol";
-import {Mock4626Vault} from "./mock/Mock4626Vault.sol";
+import {MockEthenaVault} from "./mock/MockEthenaVault.sol";
 import {USDb} from "../src/USDb.sol";
 import {USDeVault} from "../src/USDeVault.sol";
 import {StakedUSDb} from "../src/StakedUSDb.sol";
@@ -19,7 +19,7 @@ contract TestSetup is Test {
     address public constant user4 = address(0x5);
 
     MockUSDe public immutable usde;
-    Mock4626Vault internal immutable susde;
+    MockEthenaVault internal immutable susde;
     USDb public immutable usdb;
     CrossChainRouter public immutable router;
     USDeVault public immutable vault;
@@ -28,7 +28,7 @@ contract TestSetup is Test {
 
     constructor() {
         usde = new MockUSDe(); // Mock USDe
-        susde = new Mock4626Vault(address(usde)); // Mock StakedUSDeV2
+        susde = new MockEthenaVault(address(usde)); // Mock StakedUSDeV2
         usdb = new USDb(address(this));
         susdb = new StakedUSDb(usdb, address(this));
         router = new CrossChainRouter();
