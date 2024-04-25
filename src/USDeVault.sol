@@ -24,14 +24,18 @@ contract USDeVault is Whitelisted {
     IRouter public immutable router;
 
     uint256 public susdeSharePrice;
+    uint256 public cacheForHarvest;
 
     event Stake(address indexed user, uint256 amount);
     event Unstake(address indexed user, uint256 amount);
     event Harvested(uint256 minted);
+    event CacheUpdated(uint256 amount);
+    event CacheCleared(uint256 amount);
 
     error RestrictedToRouter();
     error InsufficientAmount();
     error CannotHarvest();
+    error CannotUpdateCache();
 
     constructor(
         address _router,
@@ -57,12 +61,23 @@ contract USDeVault is Whitelisted {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
         uint256 amountToMint = susde.convertToAssets(amount);
+
         bytes memory data = abi.encodeWithSignature(
             "mint(address,uint256)",
             msg.sender,
             amountToMint
         );
         router.call(usdb, data);
+
+        // check if the share price has increased and update the cache
+        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+
+        if (newSusdeSharePrice > susdeSharePrice) {
+            uint256 tokensForCache = rebalance(newSusdeSharePrice);
+            cacheForHarvest += tokensForCache;
+
+            emit CacheUpdated(tokensForCache);
+        }
 
         emit Stake(msg.sender, amountToMint);
     }
@@ -73,6 +88,16 @@ contract USDeVault is Whitelisted {
         uint256 amountToRedeem = susde.convertToShares(amount);
 
         susde.safeTransfer(to, amountToRedeem);
+
+        // check if the share price has increased and update the cache
+        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+
+        if (newSusdeSharePrice > susdeSharePrice) {
+            uint256 tokensForCache = rebalance(newSusdeSharePrice);
+            cacheForHarvest += tokensForCache;
+
+            emit CacheUpdated(tokensForCache);
+        }
 
         emit Unstake(msg.sender, amountToRedeem);
     }
@@ -85,7 +110,7 @@ contract USDeVault is Whitelisted {
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
 
         // calls the rebalance function to calculate the amount to mint
-        uint256 amountToMint = rebalance();
+        uint256 amountToMint = rebalance(newSusdeSharePrice) + cacheForHarvest;
 
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
@@ -94,29 +119,28 @@ contract USDeVault is Whitelisted {
             amountToMint
         );
         router.call(usdb, data);
+
+        // update the share price and clear the cache after minting
         susdeSharePrice = newSusdeSharePrice;
+        cacheForHarvest = 0;
 
         emit Harvested(amountToMint);
+        emit CacheCleared(cacheForHarvest);
 
         return amountToMint;
     }
 
-    function rebalance() internal view returns (uint256) {
-        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+    function rebalance(
+        uint256 _newSusdeSharePrice
+    ) internal view returns (uint256) {
+        uint256 delta = _newSusdeSharePrice - susdeSharePrice;
 
-        // Execute rebalancing only if the share price has increased
-        if (newSusdeSharePrice > susdeSharePrice) {
-            uint256 delta = newSusdeSharePrice - susdeSharePrice;
+        uint256 amountForRebalance = Math.mulDiv(
+            delta,
+            susde.balanceOf(address(this)),
+            1e18
+        );
 
-            uint256 amountToMint = Math.mulDiv(
-                delta,
-                susde.balanceOf(address(this)),
-                1e18
-            );
-
-            return amountToMint;
-        }
-
-        return 0; // Return zero if no rebalancing required
+        return amountForRebalance;
     }
 }
