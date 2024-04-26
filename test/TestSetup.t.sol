@@ -61,6 +61,9 @@ contract TestSetup is Test {
         usdb.addMinter(address(router));
         usdb.addMinter(address(redeemer));
 
+        usdb.addBurner(address(redeemer));
+        usdb.addBurner(address(susdb));
+
         vm.startPrank(user);
         usde.approve(address(vault), type(uint256).max);
         susde.approve(address(vault), type(uint256).max);

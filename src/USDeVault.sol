@@ -18,7 +18,6 @@ contract USDeVault is Whitelisted {
     using Math for uint256;
 
     Isusde public immutable susde;
-    IERC20 public immutable usde;
     address public immutable usdb;
     address public immutable susdb;
     IRouter public immutable router;
@@ -35,7 +34,6 @@ contract USDeVault is Whitelisted {
     error RestrictedToRouter();
     error InsufficientAmount();
     error CannotHarvest();
-    error CannotUpdateCache();
 
     constructor(
         address _router,
@@ -49,7 +47,6 @@ contract USDeVault is Whitelisted {
         assert(_susdb != address(0));
         router = IRouter(_router);
         susde = Isusde(_susde);
-        usde = IERC20(susde.asset());
         usdb = _usdb;
         susdb = _susdb;
 
@@ -64,7 +61,9 @@ contract USDeVault is Whitelisted {
 
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
-        updateCache(newSusdeSharePrice);
+        if (newSusdeSharePrice > susdeSharePrice) {
+            updateCache(newSusdeSharePrice);
+        }
 
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
@@ -84,7 +83,9 @@ contract USDeVault is Whitelisted {
 
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
-        updateCache(newSusdeSharePrice);
+        if (newSusdeSharePrice > susdeSharePrice) {
+            updateCache(newSusdeSharePrice);
+        }
 
         susde.safeTransfer(to, amountToRedeem);
 
@@ -94,6 +95,9 @@ contract USDeVault is Whitelisted {
     // public function to harvest the yield and mint USDb
     function harvest() public returns (uint256) {
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+
+        // avoid harvesting if the vault has no balance
+        if (susde.balanceOf(address(this)) == 0) revert InsufficientAmount();
 
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
@@ -127,21 +131,18 @@ contract USDeVault is Whitelisted {
         uint256 amountForRebalance = Math.mulDiv(
             delta,
             susde.balanceOf(address(this)),
-            1e18
+            1e18,
+            Math.Rounding.Down
         );
 
         return amountForRebalance;
     }
 
     function updateCache(uint256 _newSusdeSharePrice) internal {
-        uint256 newSusdeSharePrice = _newSusdeSharePrice;
+        uint256 tokensForCache = rebalance(_newSusdeSharePrice);
+        cacheForHarvest += tokensForCache;
+        emit CacheUpdated(tokensForCache);
 
-        if (newSusdeSharePrice > susdeSharePrice) {
-            uint256 tokensForCache = rebalance(newSusdeSharePrice);
-            cacheForHarvest += tokensForCache;
-            susdeSharePrice = newSusdeSharePrice;
-
-            emit CacheUpdated(tokensForCache);
-        }
+        susdeSharePrice = _newSusdeSharePrice;
     }
 }

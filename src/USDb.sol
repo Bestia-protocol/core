@@ -8,19 +8,29 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 
 contract USDb is Ownable2Step, ERC20Burnable, ERC20Permit {
     mapping(address => bool) public minters;
+    mapping(address => bool) public burners;
 
     event MinterAdded(address indexed minter);
     event MinterRemoved(address indexed minter);
+    event BurnerAdded(address indexed burner);
+    event BurnerRemoved(address indexed burner);
 
     error RestrictedToMinters();
+    error RestrictedToBurners();
 
-    constructor(address admin) ERC20("USDe", "USDe") ERC20Permit("USDe") {
+    constructor(address admin) ERC20("USDb", "USD Bestia") ERC20Permit("USDb") {
+        // TODO: change this to "USDb" and "USD Bestia"
         assert(admin != address(0));
         _transferOwnership(admin);
     }
 
     modifier onlyMinter() {
         if (!minters[msg.sender]) revert RestrictedToMinters();
+        _;
+    }
+
+    modifier onlyBurner() {
+        if (!burners[msg.sender]) revert RestrictedToBurners();
         _;
     }
 
@@ -34,12 +44,21 @@ contract USDb is Ownable2Step, ERC20Burnable, ERC20Permit {
         emit MinterRemoved(minter);
     }
 
+    function addBurner(address burner) external onlyOwner {
+        burners[burner] = true;
+        emit BurnerAdded(burner);
+    }
+
+    function removeBurner(address burner) external onlyOwner {
+        delete burners[burner];
+        emit BurnerRemoved(burner);
+    }
+
     function mint(address to, uint256 amount) external onlyMinter {
         _mint(to, amount);
     }
 
-    function burn(address from, uint256 amount) external onlyMinter {
+    function burn(address from, uint256 amount) external onlyBurner {
         _burn(from, amount);
     }
-    
 }
