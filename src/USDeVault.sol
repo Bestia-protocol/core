@@ -62,23 +62,17 @@ contract USDeVault is Whitelisted {
 
         uint256 amountToMint = susde.convertToAssets(amount);
 
+        // check if the share price has increased and update the cache
+        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+        updateCache(newSusdeSharePrice);
+
+        // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
             "mint(address,uint256)",
             msg.sender,
             amountToMint
         );
         router.call(usdb, data);
-
-        // check if the share price has increased and update the cache
-        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
-
-        if (newSusdeSharePrice > susdeSharePrice) {
-            uint256 tokensForCache = rebalance(newSusdeSharePrice);
-            cacheForHarvest += tokensForCache;
-            susdeSharePrice = newSusdeSharePrice;
-
-            emit CacheUpdated(tokensForCache);
-        }
 
         emit Stake(msg.sender, amountToMint);
     }
@@ -88,18 +82,11 @@ contract USDeVault is Whitelisted {
 
         uint256 amountToRedeem = susde.convertToShares(amount);
 
-        susde.safeTransfer(to, amountToRedeem);
-
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+        updateCache(newSusdeSharePrice);
 
-        if (newSusdeSharePrice > susdeSharePrice) {
-            uint256 tokensForCache = rebalance(newSusdeSharePrice);
-            cacheForHarvest += tokensForCache;
-            susdeSharePrice = newSusdeSharePrice;
-
-            emit CacheUpdated(tokensForCache);
-        }
+        susde.safeTransfer(to, amountToRedeem);
 
         emit Unstake(msg.sender, amountToRedeem);
     }
@@ -114,6 +101,10 @@ contract USDeVault is Whitelisted {
         // calls the rebalance function to calculate the amount to mint
         uint256 amountToMint = rebalance(newSusdeSharePrice) + cacheForHarvest;
 
+        // update the share price and clear the cache after minting
+        susdeSharePrice = newSusdeSharePrice;
+        cacheForHarvest = 0;
+
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature(
             "mint(address,uint256)",
@@ -121,10 +112,6 @@ contract USDeVault is Whitelisted {
             amountToMint
         );
         router.call(usdb, data);
-
-        // update the share price and clear the cache after minting
-        susdeSharePrice = newSusdeSharePrice;
-        cacheForHarvest = 0;
 
         emit Harvested(amountToMint);
         emit CacheCleared(cacheForHarvest);
@@ -144,5 +131,17 @@ contract USDeVault is Whitelisted {
         );
 
         return amountForRebalance;
+    }
+
+    function updateCache(uint256 _newSusdeSharePrice) internal {
+        uint256 newSusdeSharePrice = _newSusdeSharePrice;
+
+        if (newSusdeSharePrice > susdeSharePrice) {
+            uint256 tokensForCache = rebalance(newSusdeSharePrice);
+            cacheForHarvest += tokensForCache;
+            susdeSharePrice = newSusdeSharePrice;
+
+            emit CacheUpdated(tokensForCache);
+        }
     }
 }
