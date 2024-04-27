@@ -9,8 +9,10 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 // Mock ERC4626 Vault for testing
 // Gradually implement functionality of StakedUSDeV2.sol & (inherited) StakedUSDe.sol as needed to match function calls you need
 
-contract Mock4626Vault is ERC4626 {
+contract MockEthenaVault is ERC4626 {
     using Math for uint256;
 
-    constructor(address _usde) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {}
+    constructor(
+        address _usde
+    ) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {}
 }

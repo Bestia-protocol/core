@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {TestSetup} from "../TestSetup.t.sol";
 import {console2} from "forge-std/Test.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract USDeVaultTest is TestSetup {
     function testMintUSDbByStakingUSDe() external {
@@ -73,15 +74,124 @@ contract USDeVaultTest is TestSetup {
         uint256 amount = 1e18;
         usde.mint(user, amount);
 
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
         vm.startPrank(user);
         susde.deposit(amount, user);
         vault.stake(amount);
         vm.stopPrank();
 
-        // simulate 100% profit
+        // simulate 100% profit and harvest to send to staked USDb vault
+        usde.mint(address(susde), amount);
+
+        // check interest earned by the vault's position in USDe terms by subtracing the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
+
+        // harvest the interest to mint USDb to staked USDb vault
+        vault.harvest();
+
+        // check the USDb minted by the harvest function
+        uint256 usdbMintedByHarvest = usdb.balanceOf(address(susdb));
+        console2.log("usdbMinted by harvest function ", usdbMintedByHarvest);
+
+        // assert that the interest earned in USDe is equal to the USDb minted by the harvest function
+        assertEq(usdbMintedByHarvest, interestEarnedInUSDe);
+    }
+
+    function testMultipleHarvest() external {
+        uint256 amount = 1e18;
+        usde.mint(user, amount);
+
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        vm.stopPrank();
+
+        // simulate 100% profit and harvest to send to staked USDb vault
+        usde.mint(address(susde), amount);
+
+        // check interest earned by the vault's position in USDe terms by subtracting the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        // harvest the interest to mint USDb to staked USDb vault
+        vault.harvest();
+
+        // check the USDb minted by the harvest function
+        uint256 usdbMintedByHarvest1 = usdb.balanceOf(address(susdb));
+
+        // simulate another 100% profit and harvest to send to staked USDb vault
         usde.mint(address(susde), amount);
         vault.harvest();
-        // ERC4626 rounds down
-        assertEq(usdb.balanceOf(sink) + 1, amount);
+
+        // check the USDb minted by the harvest function
+        uint256 usdbMintedByHarvest2 = usdb.balanceOf(address(susdb)) -
+            usdbMintedByHarvest1;
+
+        assertEq(
+            usdbMintedByHarvest1 + usdbMintedByHarvest2,
+            interestEarnedInUSDe * 2
+        );
+    }
+
+    // test a cache is updated when USDb is minted is deposited to the vault
+    function testCacheOnDeposit() external {
+        uint256 amount = 1e18;
+        uint256 roundingError = 5; // max rounding error of 5
+        usde.mint(user, amount);
+        usde.mint(user2, amount);
+
+        // user deposits USDe to sUSDe vault, and then stakes to get USDb
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        susdb.deposit(usdb.balanceOf(user), user);
+        vm.stopPrank();    
+
+        console2.log("cacheForHarvest before mint ", vault.cacheForHarvest());    
+
+        // simulate 100% profit but no harvest called
+        usde.mint(address(susde), amount);
+
+        console2.log("cacheForHarvest after mint ", vault.cacheForHarvest());  
+
+        console2.log("total assets in susde after mint ", susde.convertToAssets(susde.totalSupply()));
+        console2.log("total assets in vault after mint ", susde.convertToAssets(susde.balanceOf(address(vault))));
+
+        // check interest earned by the vault's position in USDe terms by subtracting the initial amount
+        uint256 interestEarnedInUSDe = susde.convertToAssets(
+            susde.balanceOf(address(vault))
+        ) - amount;
+
+        console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
+
+        vm.startPrank(user2);
+        susde.deposit(amount, user2);
+        vault.stake(susdb.balanceOf(user2));
+        susdb.deposit(usdb.balanceOf(user2), user2);
+        vm.stopPrank();
+
+        // user unstakes and withdraws to USDe
+        vm.startPrank(user);
+        susdb.redeem(susdb.balanceOf(user), user, user);
+        redeemer.burn(usdb.balanceOf(user));
+        susde.redeem(susde.balanceOf(user), user, user);
+        vm.stopPrank();
+
+        // check balance in the cache
+        uint256 cacheAfterDeposit = vault.cacheForHarvest();
+        console2.log("cacheAfterDeposit ", cacheAfterDeposit);
+
+        // assert that the cache is updated with the interest earned
+        assertApproxEqAbs(
+            cacheAfterDeposit,
+            interestEarnedInUSDe,
+            roundingError
+        );
     }
 }
