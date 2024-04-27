@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IsUSDe} from "./interfaces/IsUSDe.sol";
 import {IRouter} from "./interfaces/IRouter.sol";
 import {Whitelisted} from "./Whitelisted.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // temp import for testing, delete before deployment
 import {console2} from "forge-std/Test.sol";

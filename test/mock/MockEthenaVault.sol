@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IsUSDe} from "src/interfaces/IsUSDe.sol";
+import {ERC4626} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {IsUSDe} from "src/interfaces/IsUSDe.sol";
 
 // Mock ERC4626 Vault for testing
 // Gradually implement functionality of StakedUSDeV2.sol & (inherited) StakedUSDe.sol as needed to match function calls you need

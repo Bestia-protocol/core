@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Test, console2} from "forge-std/Test.sol";
 import {MockUSDe} from "./mock/MockUSDe.sol";
 import {MockEthenaVault} from "./mock/MockEthenaVault.sol";
@@ -9,7 +10,6 @@ import {USDeVault} from "../src/USDeVault.sol";
 import {StakedUSDb} from "../src/StakedUSDb.sol";
 import {USDeRedeemer} from "../src/USDeRedeemer.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract TestSetup is Test {
     address public constant sink = address(0x1);
