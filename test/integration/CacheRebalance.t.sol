@@ -15,20 +15,20 @@ contract ExitRebalanceTest is TestSetup {
     // second do with a large initial balance for the susde vault
 
     // TODO: Test is not working yet. redo when accounting logic is finalized
-    function testProfitsStayInSync() public {
+    function testProfitsStayInSync_TODO() public {
         // fund users with USDe
         fundUsers();
 
         // large initial balance for the vault
         vm.startPrank(user);
-        susde.deposit(susdeStartingBalance, user);        
+        susde.deposit(susdeStartingBalance, user);
         vm.stopPrank();
 
         // user2 deposits USDe to sUSDe vault and stakes to get sUSDb
         setupUserAsSusdbStaker(user2);
-                
+
         // mint 1e16 USDe to sUSDe vault to simulate yield
-        usde.mint(address(susde), yield);        
+        usde.mint(address(susde), yield);
 
         // add user3
         setupUserAsSusdbStaker(user3);
@@ -37,11 +37,11 @@ contract ExitRebalanceTest is TestSetup {
         usde.mint(address(susde), yield);
 
         vault.harvest();
-        
-        // assertEq(
-        //     usdb.balanceOf(address(susdb)),
-        //     susde.convertToAssets(susde.balanceOf(address(vault)))
-        // );
+
+        assertEq(
+            usdb.balanceOf(address(susdb)),
+            susde.convertToAssets(susde.balanceOf(address(vault)))
+        );
     }
 
     function getVaultUSDeBalance() public view returns (uint256) {
