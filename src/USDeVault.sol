@@ -24,13 +24,19 @@ contract USDeVault is Whitelisted {
 
     uint256 public susdeSharePrice;
     uint256 public cacheForHarvest;
+    uint256 public protocolReserve;
+    uint256 public harvestingFee;
 
     event Stake(address indexed user, uint256 amount);
     event Unstake(address indexed user, uint256 amount);
     event Harvested(uint256 minted);
-    event CacheUpdated(uint256 amount);
+    event CacheUpdated(uint256 amount, uint256 oldSusdeSharePrice, uint256 newSusdeSharePrice);
     event CacheCleared(uint256 amount);
+    event HarvestingFeeUpdated(uint256 oldFee, uint256 newFee);
+    event DepositedToReserve(uint256 amount, uint256 newReserveBalance);
+    event WithdrawFromReserve(uint256 amount, uint256 newReserveBalance);
 
+    error InsufficientReserveBalance();
     error RestrictedToRouter();
     error InsufficientAmount();
     error CannotHarvest();
@@ -44,8 +50,33 @@ contract USDeVault is Whitelisted {
         susde = IsUSDe(_susde);
         usdb = _usdb;
         susdb = _susdb;
+        protocolReserve = 0;
+        harvestingFee = 0;
 
         susdeSharePrice = susde.convertToAssets(1e18);
+    }
+
+    function setHarvestingFee(uint256 newHarvestingFee) external onlyOwner {
+        emit HarvestingFeeUpdated(harvestingFee, newHarvestingFee);
+
+        harvestingFee = newHarvestingFee;
+    }
+
+    function depositToReserve(uint256 amount) external onlyOwner {
+        susde.safeTransferFrom(msg.sender, address(this), amount);
+
+        protocolReserve += amount;
+
+        emit DepositedToReserve(amount, protocolReserve);
+    }
+
+    function withdrawFromReserve(uint256 amount) external onlyOwner {
+        if (protocolReserve < amount) revert InsufficientReserveBalance();
+        protocolReserve -= amount;
+
+        susde.safeTransfer(msg.sender, amount);
+
+        emit WithdrawFromReserve(amount, protocolReserve);
     }
 
     // simple stake function to mint USDb with sUSDe deposits
@@ -57,7 +88,7 @@ contract USDeVault is Whitelisted {
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
         if (newSusdeSharePrice > susdeSharePrice) {
-            updateCache(newSusdeSharePrice);
+            _updateCache(newSusdeSharePrice);
         }
 
         // send cross-chain call to mint usdb token
@@ -75,7 +106,7 @@ contract USDeVault is Whitelisted {
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
         if (newSusdeSharePrice > susdeSharePrice) {
-            updateCache(newSusdeSharePrice);
+            _updateCache(newSusdeSharePrice);
         }
 
         susde.safeTransfer(to, amountToRedeem);
@@ -93,8 +124,8 @@ contract USDeVault is Whitelisted {
         // avoid harvesting if the share price is equal or has decreased
         if (newSusdeSharePrice <= susdeSharePrice) revert CannotHarvest();
 
-        // calls the rebalance function to calculate the amount to mint
-        uint256 amountToMint = rebalance(newSusdeSharePrice) + cacheForHarvest;
+        // calls the _rebalance function to calculate the amount to mint
+        uint256 amountToMint = _rebalance(newSusdeSharePrice) + cacheForHarvest;
 
         // update the share price and clear the cache after minting
         susdeSharePrice = newSusdeSharePrice;
@@ -110,19 +141,22 @@ contract USDeVault is Whitelisted {
         return amountToMint;
     }
 
-    function rebalance(uint256 _newSusdeSharePrice) internal view returns (uint256) {
-        uint256 delta = _newSusdeSharePrice - susdeSharePrice;
+    function _rebalance(uint256 newSusdeSharePrice) internal view returns (uint256) {
+        uint256 delta = newSusdeSharePrice - susdeSharePrice;
 
-        uint256 amountForRebalance = Math.mulDiv(delta, susde.balanceOf(address(this)), 1e18, Math.Rounding.Down);
+        uint256 amountToRebalance = Math.mulDiv(delta, susde.balanceOf(address(this)), 1e18, Math.Rounding.Down);
 
-        return amountForRebalance;
+        return amountToRebalance;
     }
 
-    function updateCache(uint256 _newSusdeSharePrice) internal {
-        uint256 tokensForCache = rebalance(_newSusdeSharePrice);
-        cacheForHarvest += tokensForCache;
-        emit CacheUpdated(tokensForCache);
+    function _updateCache(uint256 newSusdeSharePrice) internal {
+        uint256 tokensForCache = _rebalance(newSusdeSharePrice);
+        uint256 protocolShare = cacheForHarvest * harvestingFee;
+        cacheForHarvest += tokensForCache - protocolShare;
+        protocolReserve += protocolShare;
 
-        susdeSharePrice = _newSusdeSharePrice;
+        emit CacheUpdated(tokensForCache, susdeSharePrice, newSusdeSharePrice);
+
+        susdeSharePrice = newSusdeSharePrice;
     }
 }
