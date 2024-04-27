@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
-import {TestSetup} from "../TestSetup.t.sol";
-import {console2} from "forge-std/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {console2} from "forge-std/Test.sol";
+import {TestSetup} from "../TestSetup.t.sol";
 
 contract USDeVaultTest is TestSetup {
     function testMintUSDbByStakingUSDe() external {
@@ -84,9 +84,7 @@ contract USDeVaultTest is TestSetup {
         usde.mint(address(susde), amount);
 
         // check interest earned by the vault's position in USDe terms by subtracing the initial amount
-        uint256 interestEarnedInUSDe = susde.convertToAssets(
-            susde.balanceOf(address(vault))
-        ) - amount;
+        uint256 interestEarnedInUSDe = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
         console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
 
@@ -115,9 +113,7 @@ contract USDeVaultTest is TestSetup {
         usde.mint(address(susde), amount);
 
         // check interest earned by the vault's position in USDe terms by subtracting the initial amount
-        uint256 interestEarnedInUSDe = susde.convertToAssets(
-            susde.balanceOf(address(vault))
-        ) - amount;
+        uint256 interestEarnedInUSDe = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
         // harvest the interest to mint USDb to staked USDb vault
         vault.harvest();
@@ -130,13 +126,9 @@ contract USDeVaultTest is TestSetup {
         vault.harvest();
 
         // check the USDb minted by the harvest function
-        uint256 usdbMintedByHarvest2 = usdb.balanceOf(address(susdb)) -
-            usdbMintedByHarvest1;
+        uint256 usdbMintedByHarvest2 = usdb.balanceOf(address(susdb)) - usdbMintedByHarvest1;
 
-        assertEq(
-            usdbMintedByHarvest1 + usdbMintedByHarvest2,
-            interestEarnedInUSDe * 2
-        );
+        assertEq(usdbMintedByHarvest1 + usdbMintedByHarvest2, interestEarnedInUSDe * 2);
     }
 
     // test a cache is updated when USDb is minted is deposited to the vault
@@ -151,22 +143,20 @@ contract USDeVaultTest is TestSetup {
         susde.deposit(amount, user);
         vault.stake(amount);
         susdb.deposit(usdb.balanceOf(user), user);
-        vm.stopPrank();    
+        vm.stopPrank();
 
-        console2.log("cacheForHarvest before mint ", vault.cacheForHarvest());    
+        console2.log("cacheForHarvest before mint ", vault.cacheForHarvest());
 
         // simulate 100% profit but no harvest called
         usde.mint(address(susde), amount);
 
-        console2.log("cacheForHarvest after mint ", vault.cacheForHarvest());  
+        console2.log("cacheForHarvest after mint ", vault.cacheForHarvest());
 
         console2.log("total assets in susde after mint ", susde.convertToAssets(susde.totalSupply()));
         console2.log("total assets in vault after mint ", susde.convertToAssets(susde.balanceOf(address(vault))));
 
         // check interest earned by the vault's position in USDe terms by subtracting the initial amount
-        uint256 interestEarnedInUSDe = susde.convertToAssets(
-            susde.balanceOf(address(vault))
-        ) - amount;
+        uint256 interestEarnedInUSDe = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
         console2.log("interestEarnedInUSDe ", interestEarnedInUSDe);
 
@@ -188,10 +178,6 @@ contract USDeVaultTest is TestSetup {
         console2.log("cacheAfterDeposit ", cacheAfterDeposit);
 
         // assert that the cache is updated with the interest earned
-        assertApproxEqAbs(
-            cacheAfterDeposit,
-            interestEarnedInUSDe,
-            roundingError
-        );
+        assertApproxEqAbs(cacheAfterDeposit, interestEarnedInUSDe, roundingError);
     }
 }

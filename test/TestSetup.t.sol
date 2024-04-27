@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.19;
 
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import {Test, console2} from "forge-std/Test.sol";
-import {MockUSDe} from "./mock/MockUSDe.sol";
 import {MockEthenaVault} from "./mock/MockEthenaVault.sol";
 import {USDb} from "../src/USDb.sol";
 import {USDeVault} from "../src/USDeVault.sol";
 import {StakedUSDb} from "../src/StakedUSDb.sol";
 import {USDeRedeemer} from "../src/USDeRedeemer.sol";
 import {CrossChainRouter} from "../src/CrossChainRouter.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract TestSetup is Test {
     address public constant sink = address(0x1);
@@ -18,7 +18,7 @@ contract TestSetup is Test {
     address public constant user3 = address(0x4);
     address public constant user4 = address(0x5);
 
-    MockUSDe public immutable usde;
+    ERC20PresetMinterPauser public immutable usde;
     MockEthenaVault internal immutable susde;
     USDb public immutable usdb;
     CrossChainRouter public immutable router;
@@ -27,7 +27,7 @@ contract TestSetup is Test {
     StakedUSDb public immutable susdb;
 
     constructor() {
-        usde = new MockUSDe(); // Mock USDe
+        usde = new ERC20PresetMinterPauser("USD Ethena", "USDe"); // Mock USDe
         susde = new MockEthenaVault(address(usde)); // Mock StakedUSDeV2
         usdb = new USDb(address(this));
         susdb = new StakedUSDb(usdb, address(this));
