@@ -35,12 +35,7 @@ contract USDeVault is Whitelisted {
     error InsufficientAmount();
     error CannotHarvest();
 
-    constructor(
-        address _router,
-        address _susde,
-        address _usdb,
-        address _susdb
-    ) Whitelisted(msg.sender) {
+    constructor(address _router, address _susde, address _usdb, address _susdb) Whitelisted(msg.sender) {
         assert(_router != address(0));
         assert(_susde != address(0));
         assert(_usdb != address(0));
@@ -66,11 +61,7 @@ contract USDeVault is Whitelisted {
         }
 
         // send cross-chain call to mint usdb token
-        bytes memory data = abi.encodeWithSignature(
-            "mint(address,uint256)",
-            msg.sender,
-            amountToMint
-        );
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amountToMint);
         router.call(usdb, data);
 
         emit Stake(msg.sender, amountToMint);
@@ -110,11 +101,7 @@ contract USDeVault is Whitelisted {
         cacheForHarvest = 0;
 
         // send cross-chain call to mint usdb token
-        bytes memory data = abi.encodeWithSignature(
-            "mint(address,uint256)",
-            susdb,
-            amountToMint
-        );
+        bytes memory data = abi.encodeWithSignature("mint(address,uint256)", susdb, amountToMint);
         router.call(usdb, data);
 
         emit Harvested(amountToMint);
@@ -123,17 +110,10 @@ contract USDeVault is Whitelisted {
         return amountToMint;
     }
 
-    function rebalance(
-        uint256 _newSusdeSharePrice
-    ) internal view returns (uint256) {
+    function rebalance(uint256 _newSusdeSharePrice) internal view returns (uint256) {
         uint256 delta = _newSusdeSharePrice - susdeSharePrice;
 
-        uint256 amountForRebalance = Math.mulDiv(
-            delta,
-            susde.balanceOf(address(this)),
-            1e18,
-            Math.Rounding.Down
-        );
+        uint256 amountForRebalance = Math.mulDiv(delta, susde.balanceOf(address(this)), 1e18, Math.Rounding.Down);
 
         return amountForRebalance;
     }

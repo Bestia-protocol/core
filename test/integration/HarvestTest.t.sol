@@ -31,9 +31,7 @@ contract HarvestTest is TestSetup {
         vault.harvest();
 
         // user available usdb balance should be increased by the yield
-        uint256 userEndingBalance = susdb.convertToAssets(
-            susdb.balanceOf(user)
-        );
+        uint256 userEndingBalance = susdb.convertToAssets(susdb.balanceOf(user));
 
         console2.log("userUsdbStartingBalance", userUSDbStartingBalance);
         console2.log("userEndingBalance", userEndingBalance);
@@ -123,9 +121,7 @@ contract HarvestTest is TestSetup {
         usde.mint(address(susde), yield);
 
         // check the usde value of the vault shares minus the user's deposit
-        uint256 addedYield = susde.convertToAssets(
-            susde.balanceOf(address(vault))
-        ) - amount;
+        uint256 addedYield = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
         // harvest the added yield to USDb
         vault.harvest();
@@ -175,10 +171,7 @@ contract HarvestTest is TestSetup {
         susdb.deposit(usdb.balanceOf(user2), user2);
 
         // assert susdb balance of user2 is equal to their USDb deposit
-        assertEq(
-            user2UsdbStartingBalance,
-            susdb.convertToAssets(susdb.balanceOf(user2)) + 1
-        );
+        assertEq(user2UsdbStartingBalance, susdb.convertToAssets(susdb.balanceOf(user2)) + 1);
 
         vm.stopPrank();
 
@@ -186,20 +179,13 @@ contract HarvestTest is TestSetup {
         usde.mint(address(susde), yield); // 1e16 USDe
 
         // amount of yield to harvest
-        uint256 yieldDueToUser2 = susde.convertToAssets(
-            susde.balanceOf(address(vault))
-        ) - amount;
+        uint256 yieldDueToUser2 = susde.convertToAssets(susde.balanceOf(address(vault))) - amount;
 
         vault.harvest();
 
-        console2.log(
-            "usdb balance of susdb after harvest",
-            usdb.balanceOf(address(susdb))
-        );
+        console2.log("usdb balance of susdb after harvest", usdb.balanceOf(address(susdb)));
 
-        uint256 user2EndingBalance = susdb.convertToAssets(
-            susdb.balanceOf(user2)
-        );
+        uint256 user2EndingBalance = susdb.convertToAssets(susdb.balanceOf(user2));
         console2.log("user2EndingBalance", user2EndingBalance);
 
         // uint256 totalUsdbinSusdb = usdb.balanceOf(address(susdb));

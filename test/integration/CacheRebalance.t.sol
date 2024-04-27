@@ -38,10 +38,7 @@ contract ExitRebalanceTest is TestSetup {
 
         vault.harvest();
 
-        assertEq(
-            usdb.balanceOf(address(susdb)),
-            susde.convertToAssets(susde.balanceOf(address(vault)))
-        );
+        assertEq(usdb.balanceOf(address(susdb)), susde.convertToAssets(susde.balanceOf(address(vault))));
     }
 
     function getVaultUSDeBalance() public view returns (uint256) {

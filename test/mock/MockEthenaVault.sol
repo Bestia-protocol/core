@@ -12,7 +12,5 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 contract MockEthenaVault is ERC4626 {
     using Math for uint256;
 
-    constructor(
-        address _usde
-    ) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {}
+    constructor(address _usde) ERC20("Staked USDe", "susde") ERC4626(IERC20(_usde)) {}
 }
