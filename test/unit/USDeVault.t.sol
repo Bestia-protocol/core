@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {console2} from "forge-std/Test.sol";
 import {TestSetup} from "../TestSetup.t.sol";
+import {USDeVault} from "../../src/USDeVault.sol";
 
 contract USDeVaultTest is TestSetup {
-    function testMintUSDbByStakingUSDe() external {
-        uint256 amount = 1e18;
+    function testMintUSDbByStakingUSDe(uint256 amount) external {
+        vm.assume(amount < type(uint256).max);
+
         usde.mint(user, amount);
-
         vm.startPrank(user);
-
         // user deposts USDe to sUSDe vault
         susde.deposit(amount, user);
 
@@ -27,8 +27,7 @@ contract USDeVaultTest is TestSetup {
         assertEq(userUSDbBalance, userAssets);
     }
 
-    function testUSDBMintingWithInterest() external {
-        uint256 amount = 1e18;
+    function testUSDBMintingWithInterest(uint128 amount, uint128 profits) external {
         usde.mint(user, amount);
 
         // user deposts USDe to sUSDe vault
@@ -37,7 +36,7 @@ contract USDeVaultTest is TestSetup {
         vm.stopPrank();
 
         // more USDe is minted to sUSDe to simulate interest earned
-        usde.mint(address(susde), amount);
+        usde.mint(address(susde), profits);
 
         uint256 userShares = susde.balanceOf(user);
         uint256 userAssets = susde.convertToAssets(userShares);
@@ -51,8 +50,9 @@ contract USDeVaultTest is TestSetup {
         assertEq(userUSDbBalance, userAssets);
     }
 
-    function testBurnUSDbAndGetUSDe() external {
-        uint256 amount = 1e18;
+    function testBurnUSDbAndGetUSDe(uint256 amount) external {
+        vm.assume(amount < type(uint256).max);
+
         usde.mint(user, amount);
 
         // user gets USDB per normal flow
@@ -179,5 +179,35 @@ contract USDeVaultTest is TestSetup {
 
         // assert that the cache is updated with the interest earned
         assertApproxEqAbs(cacheAfterDeposit, interestEarnedInUSDe, roundingError);
+    }
+
+    function testProtocolReserve() external {
+        uint256 amount = 100 * 1e18;
+        usde.mint(user, amount);
+
+        vm.startPrank(user);
+        susde.deposit(amount, user);
+        vault.stake(amount);
+        vm.stopPrank();
+
+        // increase protocol reserve
+        usde.approve(address(susde), type(uint256).max);
+        susde.approve(address(vault), type(uint256).max);
+        usde.mint(address(this), amount);
+        susde.deposit(amount, address(this));
+        vault.depositToReserve(amount);
+
+        // simulate sUSDe share price decrease
+        vm.prank(address(susde));
+        usde.burn(1e18);
+
+        vm.prank(user);
+        redeemer.burn(amount);
+
+        // check that user got out more sUSDe than what was staked
+        assertGt(susde.balanceOf(user), amount);
+
+        vm.expectRevert(USDeVault.InsufficientFreeLiquidity.selector);
+        vault.withdrawFromReserve(amount);
     }
 }
