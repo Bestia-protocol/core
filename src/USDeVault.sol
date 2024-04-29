@@ -37,6 +37,7 @@ contract USDeVault is Whitelisted {
     event WithdrawFromReserve(uint256 amount, uint256 newReserveBalance);
 
     error InsufficientReserveBalance();
+    error InsufficientFreeLiquidity();
     error RestrictedToRouter();
     error InsufficientAmount();
     error CannotHarvest();
@@ -72,6 +73,8 @@ contract USDeVault is Whitelisted {
 
     function withdrawFromReserve(uint256 amount) external onlyOwner {
         if (protocolReserve < amount) revert InsufficientReserveBalance();
+        if (susde.balanceOf(address(this)) < amount) revert InsufficientFreeLiquidity();
+
         protocolReserve -= amount;
 
         susde.safeTransfer(msg.sender, amount);
@@ -102,6 +105,7 @@ contract USDeVault is Whitelisted {
         if (msg.sender != address(router)) revert RestrictedToRouter();
 
         uint256 amountToRedeem = susde.convertToShares(amount);
+        if (susde.balanceOf(address(this)) < amountToRedeem) revert InsufficientFreeLiquidity();
 
         // check if the share price has increased and update the cache
         uint256 newSusdeSharePrice = susde.convertToAssets(1e18);

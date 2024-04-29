@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {console2} from "forge-std/Test.sol";
 import {TestSetup} from "../TestSetup.t.sol";
+import {USDeVault} from "../../src/USDeVault.sol";
 
 contract USDeVaultTest is TestSetup {
     function testMintUSDbByStakingUSDe(uint256 amount) external {
@@ -69,7 +70,8 @@ contract USDeVaultTest is TestSetup {
         assertEq(userUSDeBalance, amount);
     }
 
-    function testHarvest(uint128 amount) external {
+    function testHarvest() external {
+        uint256 amount = 1e18;
         usde.mint(user, amount);
 
         // user deposits USDe to sUSDe vault, and then stakes to get USDb
@@ -201,5 +203,11 @@ contract USDeVaultTest is TestSetup {
 
         vm.prank(user);
         redeemer.burn(amount);
+
+        // check that user got out more sUSDe than what was staked
+        assertGt(susde.balanceOf(user), amount);
+
+        vm.expectRevert(USDeVault.InsufficientFreeLiquidity.selector);
+        vault.withdrawFromReserve(amount);
     }
 }
