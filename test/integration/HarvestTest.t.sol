@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import {console2} from "forge-std/Test.sol";
 import {TestSetup} from "../TestSetup.t.sol";
@@ -82,7 +82,6 @@ contract HarvestTest is TestSetup {
         /**
          * @dev large initial deposit to susde to simulate active vault
          */
-
         usde.mint(user3, susdeVaultBalance);
         vm.startPrank(user3);
         usde.approve(address(susde), susdeVaultBalance);
@@ -152,7 +151,6 @@ contract HarvestTest is TestSetup {
          * @dev user2 deposits USDe to sUSDe vault and then receives and stakes USDB
          * then add yield on sUSDe and harvest to USDB
          */
-
         usde.mint(user2, amount);
         vm.startPrank(user2);
 
