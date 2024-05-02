@@ -6,4 +6,5 @@ forge-std/=lib/forge-std/src/
 @layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/messagelib/
 @layerzerolabs/lz-evm-v1-0.7/=lib/LayerZero/
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
+@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 solidity-bytes-utils/=lib/solidity-bytes-utils/
