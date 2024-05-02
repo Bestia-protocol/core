@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.19;
+pragma solidity 0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
@@ -32,17 +32,8 @@ contract TestSetup is Test {
         usdb = new USDb(address(this));
         susdb = new StakedUSDb(usdb, address(this));
         router = new CrossChainRouter();
-        vault = new USDeVault(
-            address(router),
-            address(susde),
-            address(usdb),
-            address(susdb)
-        );
-        redeemer = new USDeRedeemer(
-            address(router),
-            address(vault),
-            address(usdb)
-        );
+        vault = new USDeVault(address(router), address(susde), address(usdb), address(susdb));
+        redeemer = new USDeRedeemer(address(router), address(vault), address(usdb));
 
         vault.setUserStatus(user, true);
         redeemer.setUserStatus(user, true);

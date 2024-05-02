@@ -11,7 +11,6 @@ interface ICrossDomainMessenger {
      * Events *
      *
      */
-
     event SentMessage(address indexed target, address sender, bytes message, uint256 messageNonce, uint256 gasLimit);
     event RelayedMessage(bytes32 indexed msgHash);
     event FailedRelayedMessage(bytes32 indexed msgHash);
@@ -21,7 +20,6 @@ interface ICrossDomainMessenger {
      * Variables *
      *
      */
-
     function xDomainMessageSender() external view returns (address);
 
     /**

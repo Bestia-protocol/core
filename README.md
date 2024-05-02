@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Solidity](https://img.shields.io/badge/Solidity-0.8.19-e6e6e6?style=for-the-badge&logo=solidity&logoColor=black)
+![Solidity](https://img.shields.io/badge/Solidity-0.8.22-e6e6e6?style=for-the-badge&logo=solidity&logoColor=black)
 
 </div>
 
