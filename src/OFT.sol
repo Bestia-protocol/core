@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.22;
 
-import {OAppSender} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OappSender.sol";
+import {OAppSender} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 import {OAppReceiver} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppReceiver.sol";
 import {OAppCore} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppCore.sol";
 
