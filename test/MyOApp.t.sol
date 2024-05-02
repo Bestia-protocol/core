@@ -1,24 +1,28 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.22;
-import { Packet } from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ISendLib.sol";
-import { OptionsBuilder } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
-import { MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
-import { MessagingReceipt } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
+
+import {Packet} from "@layerzerolabs/lz-evm-protocol-v2/contracts/interfaces/ISendLib.sol";
+import {OptionsBuilder} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/libs/OptionsBuilder.sol";
+import {MessagingFee} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+import {MessagingReceipt} from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OAppSender.sol";
 // The unique path location of your OApp
-import { MyOApp } from "../src/MyOApp.sol";
-import { TestHelper } from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
+import {MyOApp} from "../src/MyOApp.sol";
+import {TestHelper} from "@layerzerolabs/lz-evm-oapp-v2/test/TestHelper.sol";
 import "forge-std/console.sol";
 /// @notice Unit test for MyOApp using the TestHelper.
 /// @dev Inherits from TestHelper to utilize its setup and utility functions.
+
 contract MyOAppTest is TestHelper {
     using OptionsBuilder for bytes;
     // Declaration of mock endpoint IDs.
+
     uint16 aEid = 1;
     uint16 bEid = 2;
     // Declaration of mock contracts.
     MyOApp aMyOApp; // OApp A
     MyOApp bMyOApp; // OApp B
     /// @notice Calls setUp from TestHelper and initializes contract instances for testing.
+
     function setUp() public virtual override {
         super.setUp();
         // Setup function to initialize 2 Mock Endpoints with Mock MessageLib.
@@ -30,6 +34,7 @@ contract MyOAppTest is TestHelper {
     }
     /// @notice Tests the send and multi-compose functionality of MyOApp.
     /// @dev Simulates message passing from A -> B and checks for data integrity.
+
     function test_send() public {
         // Setup variable for data values before calling send().
         string memory dataBefore = aMyOApp.data();
@@ -38,7 +43,7 @@ contract MyOAppTest is TestHelper {
         bytes memory options = OptionsBuilder.newOptions().addExecutorLzReceiveOption(150000, 0);
         MessagingFee memory fee = aMyOApp.quote(bEid, "test message", options, false);
         // STEP 1: Sending a message via the _lzSend() method.
-        MessagingReceipt memory receipt = aMyOApp.send{ value: fee.nativeFee }(bEid, "test message", options);
+        MessagingReceipt memory receipt = aMyOApp.send{value: fee.nativeFee}(bEid, "test message", options);
         // Asserting that the receiving OApps have NOT had data manipulated.
         assertEq(bMyOApp.data(), dataBefore, "shouldn't be changed until lzReceive packet is verified");
         // STEP 2 & 3: Deliver packet to bMyOApp manually.
