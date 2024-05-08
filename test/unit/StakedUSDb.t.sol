@@ -48,4 +48,24 @@ contract StakedUSDbTest is TestSetup {
 
         vm.stopPrank();
     }
+
+    function testSocialisedLosses() external {
+        uint256 amount = 1e18;
+        usde.mint(user, amount);
+
+        vm.startPrank(user);
+        usde.approve(user, type(uint256).max);
+        susde.deposit(amount, user);
+        assertEq(susde.balanceOf(user), amount); // share price = 1
+        vault.stake(amount);
+        vm.stopPrank();
+
+        vm.prank(address(susde));
+        usde.burn(amount * 10 / 100); // share price = 0.9
+
+        vm.prank(user);
+        redeemer.burn(amount);
+
+        //assertEq(usde.balanceOf(user), amount); // share price = 1
+    }
 }
