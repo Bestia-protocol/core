@@ -46,9 +46,7 @@ contract TestSetup is Test {
 
         vault.setUserStatus(user4, true);
         redeemer.setUserStatus(user4, true);
-    }
 
-    function setUp() public {
         usdb.addMinter(address(router));
         usdb.addMinter(address(redeemer));
 

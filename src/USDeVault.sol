@@ -86,13 +86,13 @@ contract USDeVault is Whitelisted {
     function stake(uint256 amount) external onlyWhitelisted {
         susde.safeTransferFrom(msg.sender, address(this), amount);
 
-        uint256 amountToMint = susde.convertToAssets(amount);
-
         // check if the share price has increased and update the cache
-        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+        uint256 newSusdeSharePrice = _getSharePrice();
         if (newSusdeSharePrice > susdeSharePrice) {
             _updateCache(newSusdeSharePrice);
         }
+
+        uint256 amountToMint = amount * susdeSharePrice;
 
         // send cross-chain call to mint usdb token
         bytes memory data = abi.encodeWithSignature("mint(address,uint256)", msg.sender, amountToMint);
@@ -104,14 +104,14 @@ contract USDeVault is Whitelisted {
     function unstake(address to, uint256 amount) external {
         if (msg.sender != address(router)) revert RestrictedToRouter();
 
-        uint256 amountToRedeem = susde.convertToShares(amount);
-        if (susde.balanceOf(address(this)) < amountToRedeem) revert InsufficientFreeLiquidity();
-
         // check if the share price has increased and update the cache
-        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+        uint256 newSusdeSharePrice = _getSharePrice();
         if (newSusdeSharePrice > susdeSharePrice) {
             _updateCache(newSusdeSharePrice);
         }
+
+        uint256 amountToRedeem = amount / newSusdeSharePrice;
+        if (susde.balanceOf(address(this)) < amountToRedeem) revert InsufficientFreeLiquidity();
 
         susde.safeTransfer(to, amountToRedeem);
 
@@ -120,7 +120,7 @@ contract USDeVault is Whitelisted {
 
     // public function to harvest the yield and mint USDb
     function harvest() public returns (uint256) {
-        uint256 newSusdeSharePrice = susde.convertToAssets(1e18);
+        uint256 newSusdeSharePrice = _getSharePrice();
 
         // avoid harvesting if the vault has no balance
         if (susde.balanceOf(address(this)) == 0) revert InsufficientAmount();
@@ -162,5 +162,11 @@ contract USDeVault is Whitelisted {
         emit CacheUpdated(tokensForCache, susdeSharePrice, newSusdeSharePrice);
 
         susdeSharePrice = newSusdeSharePrice;
+    }
+
+    function _getSharePrice() internal view returns (uint256) {
+        uint256 price = susde.convertToAssets(1e18);
+        if (price < susdeSharePrice) return susdeSharePrice;
+        return price;
     }
 }
